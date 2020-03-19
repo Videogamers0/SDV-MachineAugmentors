@@ -6,6 +6,7 @@
   "UniqueID": "SlayerDharok.MachineAugmentors",
   "EntryDll": "MachineAugmentors.dll",
   "MinimumApiVersion": "3.0.1",
+  "UpdateKeys": [ "Nexus:5600" ],
   "Dependencies": [
     {
       "UniqueID": "Platonymous.Toolkit",
