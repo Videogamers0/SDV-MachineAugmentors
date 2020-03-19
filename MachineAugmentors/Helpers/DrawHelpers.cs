@@ -31,6 +31,104 @@ namespace MachineAugmentors.Helpers
                 return (int)Math.Floor(Math.Log10(Value) + 1);
         }
 
+        private const float SpecialNumberDigitScale = 3.5f;
+
+        /// <summary>Draws the given Text using <see cref="Utility.drawTinyDigits(int, SpriteBatch, Vector2, float, float, Color)"/> for the numbers,<para/>
+        /// or <see cref="DrawStringWithShadow(SpriteBatch, SpriteFont, string, float, float, Color, Color, int, int)"/> for the other characters.<para/>
+        /// Warning - Does NOT support linebreaks.</summary>
+        public static void DrawStringWithSpecialNumbers(SpriteBatch SB, Vector2 Position, string Text, float Scale, Color Color)
+        {
+            float DigitScale = SpecialNumberDigitScale * Scale;
+
+            List<string> Substrings = SplitByNumbers(Text);
+
+            //  The '%' character needs to be rendered lower than other characters because Game1.tinyFont sucks and doesn't have good character positions
+            Substrings = Substrings.SelectMany(x => x.SplitAndKeepDelimiter(new char[] { '%' })).ToList();
+
+            Dictionary<string, Vector2> SubstringSizes = new Dictionary<string, Vector2>();
+            foreach (string Substring in Substrings)
+            {
+                if (SubstringSizes.ContainsKey(Substring))
+                    continue;
+
+                if (int.TryParse(Substring, out int Number))
+                {
+                    SubstringSizes.Add(Substring, new Vector2(MeasureNumber(Number, DigitScale), TinyDigitBaseHeight * DigitScale));
+                }
+                else
+                {
+                    SubstringSizes.Add(Substring, Game1.tinyFont.MeasureString(Substring) * Scale);
+                }
+            }
+
+            Vector2 TotalSize = new Vector2(SubstringSizes.Values.Sum(x => x.X), SubstringSizes.Values.Max(x => x.Y));
+
+            Vector2 CurrentPosition = Position;
+            foreach (string Substring in Substrings)
+            {
+                Vector2 SubstringSize = SubstringSizes[Substring];
+                Vector2 SubstringPosition = new Vector2(CurrentPosition.X, CurrentPosition.Y + (TotalSize.Y - SubstringSize.Y) / 2.0f);
+
+                if (int.TryParse(Substring, out int Number))
+                {
+                    Utility.drawTinyDigits(Number, SB, SubstringPosition, DigitScale, 1.0f, Color);
+                }
+                else
+                {
+                    if (Substring == "%")
+                        SubstringPosition.Y += 3 * Scale;
+
+                    DrawStringWithShadow(SB, Game1.tinyFont, Substring, SubstringPosition.X, SubstringPosition.Y, Scale, Color, Color.Black, 2, 2);
+                }
+
+                CurrentPosition.X += SubstringSize.X;
+            }
+        }
+
+        /// <summary>Returns the rendered size of the given text when drawn with <see cref="DrawStringWithSpecialNumbers(SpriteBatch, Vector2, string, float)"/><para/>
+        /// Warning - Does NOT support linebreaks.</summary>
+        public static Vector2 MeasureStringWithSpecialNumbers(string Text, float Scale, float VerticalPadding)
+        {
+            List<string> Substrings = SplitByNumbers(Text);
+
+            float DigitScale = SpecialNumberDigitScale * Scale;
+
+            Vector2 Size = new Vector2();
+            foreach (string Substring in Substrings)
+            {
+                Vector2 SubstringSize;
+                if (int.TryParse(Substring, out int Number))
+                    SubstringSize = new Vector2(MeasureNumber(Number, DigitScale), TinyDigitBaseHeight * DigitScale);
+                else
+                    SubstringSize = Game1.tinyFont.MeasureString(Substring) * Scale;
+
+                Size.X += SubstringSize.X;
+                Size.Y = Math.Max(Size.Y, SubstringSize.Y);
+            }
+
+            return new Vector2(Size.X, Size.Y + VerticalPadding * 2);
+        }
+
+        /// <summary>Splits the given string into substrings where each one is either all digits, or no digits.<para/>
+        /// EX: "Hello world (25.3%)" splits into { "Hello world (", "25", ".", "3", "%)" }</summary>
+        private static List<string> SplitByNumbers(string Text)
+        {
+            List<string> Substrings = new List<string>();
+            for (int i = 0; i < Text.Length; i++)
+            {
+                string CurrentSubstring = "";
+                bool FindDigits = char.IsDigit(Text[i]);
+                while (i < Text.Length && char.IsDigit(Text[i]) == FindDigits)
+                {
+                    CurrentSubstring += Text[i];
+                    i++;
+                }
+                Substrings.Add(CurrentSubstring);
+                i--;
+            }
+            return Substrings;
+        }
+
         public static void DrawBox(SpriteBatch b, Rectangle Destination) { DrawBox(b, Destination.X, Destination.Y, Destination.Width, Destination.Height); }
         public static void DrawBox(SpriteBatch b, int X, int Y, int Width, int Height)
         {
@@ -84,11 +182,11 @@ namespace MachineAugmentors.Helpers
             b.Draw(TextureColor, new Rectangle(Destination.X + Thickness, Destination.Bottom - Thickness, Destination.Width - Thickness * 2, Thickness), Color.White); // Bottom border
         }
 
-        public static void DrawStringWithShadow(SpriteBatch b, SpriteFont Font, string Text, float XPosition, float YPosition, Color MainColor, Color ShadowColor, int ShadowXOffset, int ShadowYOffset)
+        public static void DrawStringWithShadow(SpriteBatch b, SpriteFont Font, string Text, float XPosition, float YPosition, float Scale, Color MainColor, Color ShadowColor, int ShadowXOffset, int ShadowYOffset)
         {
             Vector2 Position = new Vector2(XPosition, YPosition);
-            b.DrawString(Font, Text, Position + new Vector2(ShadowXOffset, ShadowYOffset), ShadowColor);
-            b.DrawString(Font, Text, Position, MainColor);
+            b.DrawString(Font, Text, Position + new Vector2(ShadowXOffset, ShadowYOffset), ShadowColor, 0.0f, Vector2.Zero, Scale, SpriteEffects.None, 1.0f);
+            b.DrawString(Font, Text, Position, MainColor, 0.0f, Vector2.Zero, Scale, SpriteEffects.None, 1.0f);
         }
 
         /// <summary>Returns the topleft position to draw a component of the given Size, so that it is guaranteed to be fully visible on screen</summary>

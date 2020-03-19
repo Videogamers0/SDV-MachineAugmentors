@@ -65,7 +65,6 @@
     <Compile Include="UserConfig.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="assets\Calibri_32.fnt" />
     <None Include="i18n\de.json" />
     <None Include="i18n\default.json" />
     <None Include="i18n\es.json" />
@@ -79,7 +78,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="assets\Calibri_32_0.png" />
+    <Folder Include="assets\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\packages\Pathoschild.Stardew.ModBuildConfig.3.1.0\build\Pathoschild.Stardew.ModBuildConfig.targets" Condition="Exists('..\packages\Pathoschild.Stardew.ModBuildConfig.3.1.0\build\Pathoschild.Stardew.ModBuildConfig.targets')" />

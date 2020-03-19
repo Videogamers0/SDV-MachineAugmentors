@@ -101,12 +101,7 @@ namespace MachineAugmentors
             #endregion Game Patches
 
             RegisterConsoleCommands();
-
-            Texture2D FontTexture = Helper.Content.Load<Texture2D>(Path.Combine("assets", "Calibri_32_0.png"), ContentSource.ModFolder);
-            Font = new BmFont(Path.Combine(Helper.DirectoryPath, "assets", "Calibri_32.fnt"), FontTexture);
         }
-
-        private static BmFont Font { get; set; }
 
         private void GameLoop_DayStarted(object sender, StardewModdingAPI.Events.DayStartedEventArgs e)
         {
@@ -289,6 +284,7 @@ namespace MachineAugmentors
                     Dictionary<AugmentorType, int> AttachedAugmentors = PlacedAugmentorsManager.Instance.GetAugmentorQuantities(CurrentLocation.NameOrUniqueName, HoveredTile);
                     bool HasAttachedAugmentors = AttachedAugmentors.Any(x => x.Value > 0);
                     MachineInfo MachineInfo = MachineInfo.GetMachineInfo(HoveredObject);
+                    SpriteFont DefaultFont = Game1.dialogueFont;
 
                     //  Draw a tooltip showing what effects the held item will have when attached to this machine
                     if (Game1.player.CurrentItem is Augmentor HeldAugmentor && HeldAugmentor.IsAugmentable(HoveredObject))
@@ -310,6 +306,8 @@ namespace MachineAugmentors
 
                         int Padding = 28;
                         int MarginAfterIcon = 10;
+                        float LabelTextScale = 0.75f;
+                        float ValueTextScale = 1.0f;
 
                         //  Compute sizes of each row so we know how big the tooltip is, and can horizontally center the header and other rows
 
@@ -318,7 +316,7 @@ namespace MachineAugmentors
                         Augmentor.TryGetIconDetails(HeldAugmentor.AugmentorType, out Texture2D IconTexture, out Rectangle IconSourcePosition, out float IconScale, out SpriteEffects IconEffects);
                         Vector2 IconSize = new Vector2(IconSourcePosition.Width * IconScale, IconSourcePosition.Height * IconScale);
                         string HeaderText = string.Format("{0}:", HeldAugmentor.GetEffectDescription());
-                        Vector2 HeaderTextSize = Font.Measure(HeaderText, 1.0f);
+                        Vector2 HeaderTextSize = DefaultFont.MeasureString(HeaderText) * LabelTextScale;
                         float HeaderRowWidth = IconSize.X + MarginAfterIcon + HeaderTextSize.X + HeaderHorizontalPadding * 2;
                         float HeaderRowHeight = Math.Max(IconSize.Y, HeaderTextSize.Y);
 
@@ -329,18 +327,26 @@ namespace MachineAugmentors
                         //  Compute size of the labels before the effect values
                         int MarginAfterLabel = 8;
                         string CurrentEffectLabel = string.Format("{0}:", Translate("CurrentEffectLabel"));
-                        Vector2 CurrentEffectLabelSize = Font.Measure(CurrentEffectLabel, 1.0f);
+                        Vector2 CurrentEffectLabelSize = DefaultFont.MeasureString(CurrentEffectLabel) * LabelTextScale;
                         string NewEffectLabel = string.Format("{0}:", Translate("NewEffectLabel"));
-                        Vector2 NewEffectLabelSize = Font.Measure(NewEffectLabel, 1.0f);
+                        Vector2 NewEffectLabelSize = DefaultFont.MeasureString(NewEffectLabel) * LabelTextScale;
                         float EffectLabelWidth = Math.Max(CurrentEffectLabelSize.X, NewEffectLabelSize.X);
                         Vector2 EffectLabelSize = new Vector2(EffectLabelWidth, CurrentEffectLabelSize.Y + NewEffectLabelSize.Y);
 
                         //  Compute size of the effect values
                         string CurrentEffectValue = string.Format("{0}% ({1})", (CurrentEffect * 100.0).ToString("0.##"), CurrentAttachedQuantity);
-                        Vector2 CurrentEffectValueSize = Font.Measure(CurrentEffectValue, 1.0f);
-                        string NewEffectValue = string.Format("{0}% ({1}) / {2}% ({3})",
-                            (NewEffectSingle * 100.0).ToString("0.##"), (CurrentAttachedQuantity + 1), (NewEffectAll * 100.0).ToString("0.##"), (CurrentAttachedQuantity + HeldAugmentor.Stack));
-                        Vector2 NewEffectValueSize = Font.Measure(NewEffectValue, 1.0f);
+                        Vector2 CurrentEffectValueSize = DrawHelpers.MeasureStringWithSpecialNumbers(CurrentEffectValue, ValueTextScale, 0.0f);
+                        string NewEffectValue;
+                        if (HeldAugmentor.Stack > 1)
+                        {
+                            NewEffectValue = string.Format("{0}% ({1}) / {2}% ({3})",
+                                (NewEffectSingle * 100.0).ToString("0.##"), (CurrentAttachedQuantity + 1), (NewEffectAll * 100.0).ToString("0.##"), (CurrentAttachedQuantity + HeldAugmentor.Stack));
+                        }
+                        else
+                        {
+                            NewEffectValue = string.Format("{0}% ({1})", (NewEffectSingle * 100.0).ToString("0.##"), (CurrentAttachedQuantity + 1));
+                        }
+                        Vector2 NewEffectValueSize = DrawHelpers.MeasureStringWithSpecialNumbers(NewEffectValue, ValueTextScale, 0.0f);
 
                         Vector2 EffectContentSize = new Vector2(EffectLabelWidth + MarginAfterLabel + Math.Max(CurrentEffectValueSize.X, NewEffectValueSize.X),
                             Math.Max(CurrentEffectLabelSize.Y, CurrentEffectValueSize.Y) + Math.Max(NewEffectLabelSize.Y, NewEffectValueSize.Y));
@@ -356,7 +362,7 @@ namespace MachineAugmentors
                         Vector2 IconPosition = new Vector2(HeaderStartX, CurrentY + (HeaderRowHeight - IconSize.Y) / 2.0f);
                         e.SpriteBatch.Draw(IconTexture, IconPosition, IconSourcePosition, Color.White, 0f, Vector2.Zero, IconScale, IconEffects, 1f);
                         Vector2 HeaderTextPosition = new Vector2(HeaderStartX + IconSize.X + MarginAfterIcon, CurrentY + (HeaderRowHeight - HeaderTextSize.Y) / 2.0f);
-                        Font.Draw(e.SpriteBatch, HeaderText, HeaderTextPosition, 1.0f, Color.Black);
+                        e.SpriteBatch.DrawString(DefaultFont, HeaderText, HeaderTextPosition, Color.Black, 0.0f, Vector2.Zero, LabelTextScale, SpriteEffects.None, 1.0f);
                         CurrentY += HeaderRowHeight + HorizontalSeparatorMargin;
 
                         //  Draw the horizontal separator
@@ -365,16 +371,16 @@ namespace MachineAugmentors
 
                         //  Draw the current effect
                         Vector2 CurrentEffectLabelPosition = new Vector2(ToolTipTopleft.X + Padding + (EffectLabelWidth - CurrentEffectLabelSize.X), CurrentY);
-                        Font.Draw(e.SpriteBatch, CurrentEffectLabel, CurrentEffectLabelPosition, 1.0f, Color.Black);
                         Vector2 CurrentEffectValuePosition = new Vector2(ToolTipTopleft.X + Padding + EffectLabelWidth + MarginAfterLabel, CurrentY);
-                        Font.Draw(e.SpriteBatch, CurrentEffectValue, CurrentEffectValuePosition, 1.0f, Color.White);
+                        e.SpriteBatch.DrawString(DefaultFont, CurrentEffectLabel, CurrentEffectLabelPosition, Color.Black, 0.0f, Vector2.Zero, LabelTextScale, SpriteEffects.None, 1.0f);
+                        DrawHelpers.DrawStringWithSpecialNumbers(e.SpriteBatch, CurrentEffectValuePosition, CurrentEffectValue, ValueTextScale, Color.White);
                         CurrentY += Math.Max(CurrentEffectLabelSize.Y, CurrentEffectValueSize.Y);
 
                         //  Draw the new effect
                         Vector2 NewEffectLabelPosition = new Vector2(ToolTipTopleft.X + Padding + (EffectLabelWidth - NewEffectLabelSize.X), CurrentY);
-                        Font.Draw(e.SpriteBatch, NewEffectLabel, NewEffectLabelPosition, 1.0f, Color.Black);
                         Vector2 NewEffectValuePosition = new Vector2(ToolTipTopleft.X + Padding + EffectLabelWidth + MarginAfterLabel, CurrentY);
-                        Font.Draw(e.SpriteBatch, NewEffectValue, NewEffectValuePosition, 1.0f, Color.DarkGreen);
+                        e.SpriteBatch.DrawString(DefaultFont, NewEffectLabel, NewEffectLabelPosition, Color.Black, 0.0f, Vector2.Zero, LabelTextScale, SpriteEffects.None, 1.0f);
+                        DrawHelpers.DrawStringWithSpecialNumbers(e.SpriteBatch, NewEffectValuePosition, NewEffectValue, ValueTextScale, Color.White);
                     }
                     //  Draw a tooltip showing what effects are currently applied to this machine
                     else if (HasAttachedAugmentors)
@@ -398,7 +404,7 @@ namespace MachineAugmentors
                         {
                             double CurrentEffect = Augmentor.ComputeEffect(KVP.Key, KVP.Value, MachineInfo.RequiresInput);
                             string Text = string.Format("{0}% ({1})", (CurrentEffect * 100.0).ToString("0.#"), KVP.Value);
-                            Vector2 TextSize = Font.Measure(Text, 1.0f);
+                            Vector2 TextSize = DrawHelpers.MeasureStringWithSpecialNumbers(Text, 1.0f, 4.0f);
 
                             float RowWidth = IconColumnWidth + MarginAfterIcon + TextSize.X;
                             float RowHeight = Math.Max(IconSizes[KVP.Key].Y, TextSize.Y);
@@ -428,8 +434,9 @@ namespace MachineAugmentors
                             //  Draw the value
                             double CurrentEffect = Augmentor.ComputeEffect(KVP.Key, KVP.Value, MachineInfo.RequiresInput);
                             string Text = string.Format("{0}% ({1})", (CurrentEffect * 100.0).ToString("0.#"), KVP.Value);
-                            Vector2 TextPosition = new Vector2(CurrentX, CurrentY + (Font.Measure(Text, 1.0f).Y - RowHeight) / 2.0f);
-                            Font.Draw(e.SpriteBatch, Text, TextPosition, 1.0f, Color.Black);
+                            Vector2 TextSize = DrawHelpers.MeasureStringWithSpecialNumbers(Text, 1.0f, 0.0f);
+                            Vector2 TextPosition = new Vector2(CurrentX, CurrentY + (RowHeight - TextSize.Y) / 2.0f);
+                            DrawHelpers.DrawStringWithSpecialNumbers(e.SpriteBatch, TextPosition, Text, 1.0f, Color.White);
 
                             CurrentY += RowHeight;
                         }

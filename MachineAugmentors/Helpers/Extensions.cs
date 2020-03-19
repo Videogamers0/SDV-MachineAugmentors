@@ -56,5 +56,24 @@ namespace MachineAugmentors.Helpers
                 return new Point((int)value.X, (int)value.Y);
             }
         }
+
+        //Taken from: https://stackoverflow.com/questions/521146/c-sharp-split-string-but-keep-split-chars-separators
+        public static IEnumerable<string> SplitAndKeepDelimiter(this string s, char[] delims)
+        {
+            int start = 0, index;
+
+            while ((index = s.IndexOfAny(delims, start)) != -1)
+            {
+                if (index - start > 0)
+                    yield return s.Substring(start, index - start);
+                yield return s.Substring(index, 1);
+                start = index + 1;
+            }
+
+            if (start < s.Length)
+            {
+                yield return s.Substring(start);
+            }
+        }
     }
 }

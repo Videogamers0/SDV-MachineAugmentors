@@ -431,6 +431,8 @@ namespace MachineAugmentors.Items
             return false;
         }
 
+        private static readonly Color CategoryColor = new Color(156, 122, 37);
+        public override Color getCategoryColor() { return CategoryColor; }
         public override string getHoverBoxText(Item hoveredItem) { return base.getHoverBoxText(hoveredItem); }
         public override void hoverAction() { base.hoverAction(); }
         public override bool performToolAction(Tool t, GameLocation location) { return base.performToolAction(t, location); }
@@ -443,7 +445,6 @@ namespace MachineAugmentors.Items
         public override bool canBeTrashed() { return true; }
         public override bool canStackWith(ISalable other) { return CanStackWith(other); }
         public override string getCategoryName() { return MachineAugmentorsMod.Translate("AugmentorCategoryName"); }
-        public override Color getCategoryColor() { return Color.Goldenrod; }
         public override string getDescription() { return GetDescription(); }
         public override Item getOne() { return CreateSingle(); }
         public override bool isPlaceable() { return true; }
