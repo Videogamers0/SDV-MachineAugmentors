@@ -19,7 +19,7 @@ namespace MachineAugmentors
 {
     public class MachineAugmentorsMod : Mod
     {
-        public static Version CurrentVersion = new Version(1, 0, 1); // Last updated 3/19/2020 (Don't forget to update manifest.json)
+        public static Version CurrentVersion = new Version(1, 0, 2); // Last updated 3/19/2020 (Don't forget to update manifest.json)
         public const string ModUniqueId = "SlayerDharok.MachineAugmentors";
 
         private const string UserConfigFilename = "config.json";

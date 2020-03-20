@@ -1,4 +1,5 @@
-﻿using MachineAugmentors.Items;
+﻿using Harmony;
+using MachineAugmentors.Items;
 using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewValley;
@@ -57,6 +58,7 @@ namespace MachineAugmentors.Harmony
 
         private static PerformObjectDropInData PODIData { get; set; }
 
+        [HarmonyPriority(Priority.First + 1)]
         public static bool PerformObjectDropInAction_Prefix(Object __instance, Item dropInItem, bool probe, Farmer who, ref bool __result)
         {
             try
@@ -79,6 +81,7 @@ namespace MachineAugmentors.Harmony
             }
         }
 
+        [HarmonyPriority(Priority.First + 1)]
         public static void PerformObjectDropInAction_Postfix(Object __instance, Item dropInItem, bool probe, Farmer who, ref bool __result)
         {
             try
