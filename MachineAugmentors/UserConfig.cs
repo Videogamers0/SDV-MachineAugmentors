@@ -175,7 +175,11 @@ namespace MachineAugmentors
     public class AugmentorConfig
     {
         /// <summary>The AugmentorType that these settings are for.</summary>
+        [JsonProperty("AugmentorType")]
         [XmlElement("AugmentorType")]
+        public string AugmentorTypeString { get { return AugmentorType.ToString(); } set { AugmentorType = (AugmentorType)Enum.Parse(typeof(AugmentorType), value); } }
+        [JsonIgnore]
+        [XmlIgnore]
         public AugmentorType AugmentorType { get; set; }
 
         /// <summary>The default price of this AugmentorType before any price randomization is applied.</summary>

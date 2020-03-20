@@ -19,11 +19,13 @@ namespace MachineAugmentors
 {
     public class MachineAugmentorsMod : Mod
     {
-        public static Version CurrentVersion = new Version(1, 0, 0); // Last updated 3/4/2020 (Don't forget to update manifest.json)
+        public static Version CurrentVersion = new Version(1, 0, 1); // Last updated 3/19/2020 (Don't forget to update manifest.json)
         public const string ModUniqueId = "SlayerDharok.MachineAugmentors";
 
         private const string UserConfigFilename = "config.json";
         public static UserConfig UserConfig { get; private set; }
+        private const string MachineConfigFilename = "custom_machines.json";
+        public static MachineConfig MachineConfig { get; private set; }
 
         internal static MachineAugmentorsMod ModInstance { get; private set; }
         internal static string Translate(string Key, Dictionary<string, string> Parameters = null)
@@ -47,7 +49,7 @@ namespace MachineAugmentors
             //  Load global user settings into memory
             UserConfig GlobalUserConfig = helper.Data.ReadJsonFile<UserConfig>(UserConfigFilename);
 #if DEBUG
-            GlobalUserConfig = null; // Force full refresh of config file for testing purposes
+            //GlobalUserConfig = null; // Force full refresh of config file for testing purposes
 #endif
             if (GlobalUserConfig != null)
             {
@@ -60,6 +62,19 @@ namespace MachineAugmentors
             }
             GlobalUserConfig.AfterLoaded();
             UserConfig = GlobalUserConfig;
+
+            //  Load custom machine settings
+            MachineConfig GlobalMachineConfig = helper.Data.ReadJsonFile<MachineConfig>(Path.Combine("assets", MachineConfigFilename));
+#if DEBUG
+            //GlobalMachineConfig = null; // Force full refresh of config file for testing purposes
+#endif
+            if (GlobalMachineConfig == null)
+            {
+                GlobalMachineConfig = new MachineConfig();
+                helper.Data.WriteJsonFile(MachineConfigFilename, GlobalMachineConfig);
+            }
+            MachineConfig = GlobalMachineConfig;
+            MachineInfo.LoadAugmentableMachineData();
 
             Helper.Events.Display.RenderedWorld += Display_RenderedWorld;
             Helper.Events.GameLoop.Saving += GameLoop_Saving;
@@ -261,13 +276,6 @@ namespace MachineAugmentors
             if (!Context.IsWorldReady)
                 throw new InvalidOperationException("Context not ready in GameLoop_SavedLoaded. Cannot read required data from the Game's GameLocations.");
 
-#if NEVER //DEBUG
-            foreach (AugmentorType Type in Enum.GetValues(typeof(AugmentorType)).Cast<AugmentorType>())
-            {
-                Game1.player.addItemToInventory(Augmentor.CreateInstance(Type, 8));
-            }
-#endif
-
             TodaysStock = null;
             PlacedAugmentorsManager.Instance = new PlacedAugmentorsManager();
         }
@@ -283,165 +291,167 @@ namespace MachineAugmentors
                 {
                     Dictionary<AugmentorType, int> AttachedAugmentors = PlacedAugmentorsManager.Instance.GetAugmentorQuantities(CurrentLocation.NameOrUniqueName, HoveredTile);
                     bool HasAttachedAugmentors = AttachedAugmentors.Any(x => x.Value > 0);
-                    MachineInfo MachineInfo = MachineInfo.GetMachineInfo(HoveredObject);
-                    SpriteFont DefaultFont = Game1.dialogueFont;
-
-                    //  Draw a tooltip showing what effects the held item will have when attached to this machine
-                    if (Game1.player.CurrentItem is Augmentor HeldAugmentor && HeldAugmentor.IsAugmentable(HoveredObject))
+                    if (MachineInfo.TryGetMachineInfo(HoveredObject, out MachineInfo MI))
                     {
-                        AttachedAugmentors.TryGetValue(HeldAugmentor.AugmentorType, out int CurrentAttachedQuantity);
+                        SpriteFont DefaultFont = Game1.dialogueFont;
 
-                        double CurrentEffect = CurrentAttachedQuantity <= 0 ?
-                            Augmentor.GetDefaultEffect(HeldAugmentor.AugmentorType) : Augmentor.ComputeEffect(HeldAugmentor.AugmentorType, CurrentAttachedQuantity, MachineInfo.RequiresInput);
-                        double NewEffectSingle = Augmentor.ComputeEffect(HeldAugmentor.AugmentorType, CurrentAttachedQuantity + 1, MachineInfo.RequiresInput);
-                        double NewEffectAll = Augmentor.ComputeEffect(HeldAugmentor.AugmentorType, CurrentAttachedQuantity + HeldAugmentor.Stack, MachineInfo.RequiresInput);
-
-                        //  Example of desired tooltip:
-                        //        -------------------------------------------
-                        //        |          [Icon] Time to process:        |
-                        //        |-----------------------------------------|
-                        //        |  Current Effect: 95.5%                  |
-                        //        |      New Effect: 92.2% (1) / 81.1% (4)  |
-                        //        -------------------------------------------
-
-                        int Padding = 28;
-                        int MarginAfterIcon = 10;
-                        float LabelTextScale = 0.75f;
-                        float ValueTextScale = 1.0f;
-
-                        //  Compute sizes of each row so we know how big the tooltip is, and can horizontally center the header and other rows
-
-                        //  Compute size of header
-                        int HeaderHorizontalPadding = 4;
-                        Augmentor.TryGetIconDetails(HeldAugmentor.AugmentorType, out Texture2D IconTexture, out Rectangle IconSourcePosition, out float IconScale, out SpriteEffects IconEffects);
-                        Vector2 IconSize = new Vector2(IconSourcePosition.Width * IconScale, IconSourcePosition.Height * IconScale);
-                        string HeaderText = string.Format("{0}:", HeldAugmentor.GetEffectDescription());
-                        Vector2 HeaderTextSize = DefaultFont.MeasureString(HeaderText) * LabelTextScale;
-                        float HeaderRowWidth = IconSize.X + MarginAfterIcon + HeaderTextSize.X + HeaderHorizontalPadding * 2;
-                        float HeaderRowHeight = Math.Max(IconSize.Y, HeaderTextSize.Y);
-
-                        //  Compute size of horizontal separator
-                        int HorizontalSeparatorHeight = 6;
-                        int HorizontalSeparatorMargin = 8;
-
-                        //  Compute size of the labels before the effect values
-                        int MarginAfterLabel = 8;
-                        string CurrentEffectLabel = string.Format("{0}:", Translate("CurrentEffectLabel"));
-                        Vector2 CurrentEffectLabelSize = DefaultFont.MeasureString(CurrentEffectLabel) * LabelTextScale;
-                        string NewEffectLabel = string.Format("{0}:", Translate("NewEffectLabel"));
-                        Vector2 NewEffectLabelSize = DefaultFont.MeasureString(NewEffectLabel) * LabelTextScale;
-                        float EffectLabelWidth = Math.Max(CurrentEffectLabelSize.X, NewEffectLabelSize.X);
-                        Vector2 EffectLabelSize = new Vector2(EffectLabelWidth, CurrentEffectLabelSize.Y + NewEffectLabelSize.Y);
-
-                        //  Compute size of the effect values
-                        string CurrentEffectValue = string.Format("{0}% ({1})", (CurrentEffect * 100.0).ToString("0.##"), CurrentAttachedQuantity);
-                        Vector2 CurrentEffectValueSize = DrawHelpers.MeasureStringWithSpecialNumbers(CurrentEffectValue, ValueTextScale, 0.0f);
-                        string NewEffectValue;
-                        if (HeldAugmentor.Stack > 1)
+                        //  Draw a tooltip showing what effects the held item will have when attached to this machine
+                        if (Game1.player.CurrentItem is Augmentor HeldAugmentor && HeldAugmentor.IsAugmentable(HoveredObject))
                         {
-                            NewEffectValue = string.Format("{0}% ({1}) / {2}% ({3})",
-                                (NewEffectSingle * 100.0).ToString("0.##"), (CurrentAttachedQuantity + 1), (NewEffectAll * 100.0).ToString("0.##"), (CurrentAttachedQuantity + HeldAugmentor.Stack));
-                        }
-                        else
-                        {
-                            NewEffectValue = string.Format("{0}% ({1})", (NewEffectSingle * 100.0).ToString("0.##"), (CurrentAttachedQuantity + 1));
-                        }
-                        Vector2 NewEffectValueSize = DrawHelpers.MeasureStringWithSpecialNumbers(NewEffectValue, ValueTextScale, 0.0f);
+                            AttachedAugmentors.TryGetValue(HeldAugmentor.AugmentorType, out int CurrentAttachedQuantity);
 
-                        Vector2 EffectContentSize = new Vector2(EffectLabelWidth + MarginAfterLabel + Math.Max(CurrentEffectValueSize.X, NewEffectValueSize.X),
-                            Math.Max(CurrentEffectLabelSize.Y, CurrentEffectValueSize.Y) + Math.Max(NewEffectLabelSize.Y, NewEffectValueSize.Y));
+                            double CurrentEffect = CurrentAttachedQuantity <= 0 ?
+                                Augmentor.GetDefaultEffect(HeldAugmentor.AugmentorType) : Augmentor.ComputeEffect(HeldAugmentor.AugmentorType, CurrentAttachedQuantity, MI.RequiresInput);
+                            double NewEffectSingle = Augmentor.ComputeEffect(HeldAugmentor.AugmentorType, CurrentAttachedQuantity + 1, MI.RequiresInput);
+                            double NewEffectAll = Augmentor.ComputeEffect(HeldAugmentor.AugmentorType, CurrentAttachedQuantity + HeldAugmentor.Stack, MI.RequiresInput);
 
-                        //  Compute total size of tooltip, draw the background
-                        Vector2 ToolTipSize = new Vector2(Padding * 2 + Math.Max(HeaderRowWidth, EffectContentSize.X), Padding + HeaderRowHeight + HorizontalSeparatorMargin + HorizontalSeparatorHeight + HorizontalSeparatorMargin + EffectContentSize.Y + Padding);
-                        Point ToolTipTopleft = DrawHelpers.GetTopleftPosition(new Point((int)ToolTipSize.X, (int)ToolTipSize.Y), MouseScreenPosition, 100);
-                        DrawHelpers.DrawBox(e.SpriteBatch, new Rectangle(ToolTipTopleft.X, ToolTipTopleft.Y, (int)ToolTipSize.X, (int)ToolTipSize.Y));
-                        float CurrentY = ToolTipTopleft.Y + Padding;
+                            //  Example of desired tooltip:
+                            //        -------------------------------------------
+                            //        |          [Icon] Time to process:        |
+                            //        |-----------------------------------------|
+                            //        |  Current Effect: 95.5%                  |
+                            //        |      New Effect: 92.2% (1) / 81.1% (4)  |
+                            //        -------------------------------------------
 
-                        //  Draw the header
-                        float HeaderStartX = ToolTipTopleft.X + (ToolTipSize.X - HeaderRowWidth) / 2.0f;
-                        Vector2 IconPosition = new Vector2(HeaderStartX, CurrentY + (HeaderRowHeight - IconSize.Y) / 2.0f);
-                        e.SpriteBatch.Draw(IconTexture, IconPosition, IconSourcePosition, Color.White, 0f, Vector2.Zero, IconScale, IconEffects, 1f);
-                        Vector2 HeaderTextPosition = new Vector2(HeaderStartX + IconSize.X + MarginAfterIcon, CurrentY + (HeaderRowHeight - HeaderTextSize.Y) / 2.0f);
-                        e.SpriteBatch.DrawString(DefaultFont, HeaderText, HeaderTextPosition, Color.Black, 0.0f, Vector2.Zero, LabelTextScale, SpriteEffects.None, 1.0f);
-                        CurrentY += HeaderRowHeight + HorizontalSeparatorMargin;
+                            int Padding = 28;
+                            int MarginAfterIcon = 10;
+                            float LabelTextScale = 0.75f;
+                            float ValueTextScale = 1.0f;
 
-                        //  Draw the horizontal separator
-                        DrawHelpers.DrawHorizontalSeparator(e.SpriteBatch, ToolTipTopleft.X + Padding, (int)CurrentY, (int)(ToolTipSize.X - 2 * Padding), HorizontalSeparatorHeight);
-                        CurrentY += HorizontalSeparatorHeight + HorizontalSeparatorMargin;
+                            //  Compute sizes of each row so we know how big the tooltip is, and can horizontally center the header and other rows
 
-                        //  Draw the current effect
-                        Vector2 CurrentEffectLabelPosition = new Vector2(ToolTipTopleft.X + Padding + (EffectLabelWidth - CurrentEffectLabelSize.X), CurrentY);
-                        Vector2 CurrentEffectValuePosition = new Vector2(ToolTipTopleft.X + Padding + EffectLabelWidth + MarginAfterLabel, CurrentY);
-                        e.SpriteBatch.DrawString(DefaultFont, CurrentEffectLabel, CurrentEffectLabelPosition, Color.Black, 0.0f, Vector2.Zero, LabelTextScale, SpriteEffects.None, 1.0f);
-                        DrawHelpers.DrawStringWithSpecialNumbers(e.SpriteBatch, CurrentEffectValuePosition, CurrentEffectValue, ValueTextScale, Color.White);
-                        CurrentY += Math.Max(CurrentEffectLabelSize.Y, CurrentEffectValueSize.Y);
-
-                        //  Draw the new effect
-                        Vector2 NewEffectLabelPosition = new Vector2(ToolTipTopleft.X + Padding + (EffectLabelWidth - NewEffectLabelSize.X), CurrentY);
-                        Vector2 NewEffectValuePosition = new Vector2(ToolTipTopleft.X + Padding + EffectLabelWidth + MarginAfterLabel, CurrentY);
-                        e.SpriteBatch.DrawString(DefaultFont, NewEffectLabel, NewEffectLabelPosition, Color.Black, 0.0f, Vector2.Zero, LabelTextScale, SpriteEffects.None, 1.0f);
-                        DrawHelpers.DrawStringWithSpecialNumbers(e.SpriteBatch, NewEffectValuePosition, NewEffectValue, ValueTextScale, Color.White);
-                    }
-                    //  Draw a tooltip showing what effects are currently applied to this machine
-                    else if (HasAttachedAugmentors)
-                    {
-                        int Padding = 28;
-                        int MarginAfterIcon = 10;
-
-                        //  Compute the size of each icon
-                        Dictionary<AugmentorType, Vector2> IconSizes = new Dictionary<AugmentorType, Vector2>();
-                        foreach (KeyValuePair<AugmentorType, int> KVP in AttachedAugmentors.Where(x => x.Value > 0))
-                        {
-                            Augmentor.TryGetIconDetails(KVP.Key, out Texture2D IconTexture, out Rectangle IconSourcePosition, out float IconScale, out SpriteEffects IconEffects);
+                            //  Compute size of header
+                            int HeaderHorizontalPadding = 4;
+                            Augmentor.TryGetIconDetails(HeldAugmentor.AugmentorType, out Texture2D IconTexture, out Rectangle IconSourcePosition, out float IconScale, out SpriteEffects IconEffects);
                             Vector2 IconSize = new Vector2(IconSourcePosition.Width * IconScale, IconSourcePosition.Height * IconScale);
-                            IconSizes.Add(KVP.Key, IconSize);
-                        }
-                        float IconColumnWidth = IconSizes.Values.Max(x => x.Y);
+                            string HeaderText = string.Format("{0}:", HeldAugmentor.GetEffectDescription());
+                            Vector2 HeaderTextSize = DefaultFont.MeasureString(HeaderText) * LabelTextScale;
+                            float HeaderRowWidth = IconSize.X + MarginAfterIcon + HeaderTextSize.X + HeaderHorizontalPadding * 2;
+                            float HeaderRowHeight = Math.Max(IconSize.Y, HeaderTextSize.Y);
 
-                        //  Compute the size of each row (each row shows the effect of a type of augmentor that has been applied to this machine)
-                        Dictionary<AugmentorType, Vector2> RowSizes = new Dictionary<AugmentorType, Vector2>();
-                        foreach (KeyValuePair<AugmentorType, int> KVP in AttachedAugmentors.Where(x => x.Value > 0))
-                        {
-                            double CurrentEffect = Augmentor.ComputeEffect(KVP.Key, KVP.Value, MachineInfo.RequiresInput);
-                            string Text = string.Format("{0}% ({1})", (CurrentEffect * 100.0).ToString("0.#"), KVP.Value);
-                            Vector2 TextSize = DrawHelpers.MeasureStringWithSpecialNumbers(Text, 1.0f, 4.0f);
+                            //  Compute size of horizontal separator
+                            int HorizontalSeparatorHeight = 6;
+                            int HorizontalSeparatorMargin = 8;
 
-                            float RowWidth = IconColumnWidth + MarginAfterIcon + TextSize.X;
-                            float RowHeight = Math.Max(IconSizes[KVP.Key].Y, TextSize.Y);
-                            RowSizes.Add(KVP.Key, new Vector2(RowWidth, RowHeight));
-                        }
+                            //  Compute size of the labels before the effect values
+                            int MarginAfterLabel = 8;
+                            string CurrentEffectLabel = string.Format("{0}:", Translate("CurrentEffectLabel"));
+                            Vector2 CurrentEffectLabelSize = DefaultFont.MeasureString(CurrentEffectLabel) * LabelTextScale;
+                            string NewEffectLabel = string.Format("{0}:", Translate("NewEffectLabel"));
+                            Vector2 NewEffectLabelSize = DefaultFont.MeasureString(NewEffectLabel) * LabelTextScale;
+                            float EffectLabelWidth = Math.Max(CurrentEffectLabelSize.X, NewEffectLabelSize.X);
+                            Vector2 EffectLabelSize = new Vector2(EffectLabelWidth, CurrentEffectLabelSize.Y + NewEffectLabelSize.Y);
 
-                        //  Compute total size of tooltip, draw the background
-                        Vector2 ToolTipSize = new Vector2(Padding * 2 + RowSizes.Values.Max(x => x.X), Padding * 2 + RowSizes.Values.Sum(x => x.Y));
-                        Point ToolTipTopleft = DrawHelpers.GetTopleftPosition(new Point((int)ToolTipSize.X, (int)ToolTipSize.Y), MouseScreenPosition, 100);
-                        DrawHelpers.DrawBox(e.SpriteBatch, new Rectangle(ToolTipTopleft.X, ToolTipTopleft.Y, (int)ToolTipSize.X, (int)ToolTipSize.Y));
-                        float CurrentY = ToolTipTopleft.Y + Padding;
+                            //  Compute size of the effect values
+                            string CurrentEffectValue = string.Format("{0}% ({1})", (CurrentEffect * 100.0).ToString("0.##"), CurrentAttachedQuantity);
+                            Vector2 CurrentEffectValueSize = DrawHelpers.MeasureStringWithSpecialNumbers(CurrentEffectValue, ValueTextScale, 0.0f);
+                            string NewEffectValue;
+                            if (HeldAugmentor.Stack > 1)
+                            {
+                                NewEffectValue = string.Format("{0}% ({1}) / {2}% ({3})",
+                                    (NewEffectSingle * 100.0).ToString("0.##"), (CurrentAttachedQuantity + 1), (NewEffectAll * 100.0).ToString("0.##"), (CurrentAttachedQuantity + HeldAugmentor.Stack));
+                            }
+                            else
+                            {
+                                NewEffectValue = string.Format("{0}% ({1})", (NewEffectSingle * 100.0).ToString("0.##"), (CurrentAttachedQuantity + 1));
+                            }
+                            Vector2 NewEffectValueSize = DrawHelpers.MeasureStringWithSpecialNumbers(NewEffectValue, ValueTextScale, 0.0f);
 
-                        //  Draw each row
-                        float RowStartX = ToolTipTopleft.X + Padding;
-                        foreach (KeyValuePair<AugmentorType, int> KVP in AttachedAugmentors.Where(x => x.Value > 0))
-                        {
-                            float CurrentX = RowStartX;
-                            float RowHeight = RowSizes[KVP.Key].Y;
+                            Vector2 EffectContentSize = new Vector2(EffectLabelWidth + MarginAfterLabel + Math.Max(CurrentEffectValueSize.X, NewEffectValueSize.X),
+                                Math.Max(CurrentEffectLabelSize.Y, CurrentEffectValueSize.Y) + Math.Max(NewEffectLabelSize.Y, NewEffectValueSize.Y));
 
-                            //  Draw the icon
-                            Augmentor.TryGetIconDetails(KVP.Key, out Texture2D IconTexture, out Rectangle IconSourcePosition, out float IconScale, out SpriteEffects IconEffects);
-                            Vector2 IconSize = IconSizes[KVP.Key];
-                            Vector2 IconPosition = new Vector2(CurrentX + (IconColumnWidth - IconSize.X) / 2.0f, CurrentY + (RowHeight - IconSize.Y) / 2.0f);
+                            //  Compute total size of tooltip, draw the background
+                            Vector2 ToolTipSize = new Vector2(Padding * 2 + Math.Max(HeaderRowWidth, EffectContentSize.X), Padding + HeaderRowHeight + HorizontalSeparatorMargin + HorizontalSeparatorHeight + HorizontalSeparatorMargin + EffectContentSize.Y + Padding);
+                            Point ToolTipTopleft = DrawHelpers.GetTopleftPosition(new Point((int)ToolTipSize.X, (int)ToolTipSize.Y), MouseScreenPosition, 100);
+                            DrawHelpers.DrawBox(e.SpriteBatch, new Rectangle(ToolTipTopleft.X, ToolTipTopleft.Y, (int)ToolTipSize.X, (int)ToolTipSize.Y));
+                            float CurrentY = ToolTipTopleft.Y + Padding;
+
+                            //  Draw the header
+                            float HeaderStartX = ToolTipTopleft.X + (ToolTipSize.X - HeaderRowWidth) / 2.0f;
+                            Vector2 IconPosition = new Vector2(HeaderStartX, CurrentY + (HeaderRowHeight - IconSize.Y) / 2.0f);
                             e.SpriteBatch.Draw(IconTexture, IconPosition, IconSourcePosition, Color.White, 0f, Vector2.Zero, IconScale, IconEffects, 1f);
-                            CurrentX += IconColumnWidth + MarginAfterIcon;
+                            Vector2 HeaderTextPosition = new Vector2(HeaderStartX + IconSize.X + MarginAfterIcon, CurrentY + (HeaderRowHeight - HeaderTextSize.Y) / 2.0f);
+                            e.SpriteBatch.DrawString(DefaultFont, HeaderText, HeaderTextPosition, Color.Black, 0.0f, Vector2.Zero, LabelTextScale, SpriteEffects.None, 1.0f);
+                            CurrentY += HeaderRowHeight + HorizontalSeparatorMargin;
 
-                            //  Draw the value
-                            double CurrentEffect = Augmentor.ComputeEffect(KVP.Key, KVP.Value, MachineInfo.RequiresInput);
-                            string Text = string.Format("{0}% ({1})", (CurrentEffect * 100.0).ToString("0.#"), KVP.Value);
-                            Vector2 TextSize = DrawHelpers.MeasureStringWithSpecialNumbers(Text, 1.0f, 0.0f);
-                            Vector2 TextPosition = new Vector2(CurrentX, CurrentY + (RowHeight - TextSize.Y) / 2.0f);
-                            DrawHelpers.DrawStringWithSpecialNumbers(e.SpriteBatch, TextPosition, Text, 1.0f, Color.White);
+                            //  Draw the horizontal separator
+                            DrawHelpers.DrawHorizontalSeparator(e.SpriteBatch, ToolTipTopleft.X + Padding, (int)CurrentY, (int)(ToolTipSize.X - 2 * Padding), HorizontalSeparatorHeight);
+                            CurrentY += HorizontalSeparatorHeight + HorizontalSeparatorMargin;
 
-                            CurrentY += RowHeight;
+                            //  Draw the current effect
+                            Vector2 CurrentEffectLabelPosition = new Vector2(ToolTipTopleft.X + Padding + (EffectLabelWidth - CurrentEffectLabelSize.X), CurrentY);
+                            Vector2 CurrentEffectValuePosition = new Vector2(ToolTipTopleft.X + Padding + EffectLabelWidth + MarginAfterLabel, CurrentY);
+                            e.SpriteBatch.DrawString(DefaultFont, CurrentEffectLabel, CurrentEffectLabelPosition, Color.Black, 0.0f, Vector2.Zero, LabelTextScale, SpriteEffects.None, 1.0f);
+                            DrawHelpers.DrawStringWithSpecialNumbers(e.SpriteBatch, CurrentEffectValuePosition, CurrentEffectValue, ValueTextScale, Color.White);
+                            CurrentY += Math.Max(CurrentEffectLabelSize.Y, CurrentEffectValueSize.Y);
+
+                            //  Draw the new effect
+                            Vector2 NewEffectLabelPosition = new Vector2(ToolTipTopleft.X + Padding + (EffectLabelWidth - NewEffectLabelSize.X), CurrentY);
+                            Vector2 NewEffectValuePosition = new Vector2(ToolTipTopleft.X + Padding + EffectLabelWidth + MarginAfterLabel, CurrentY);
+                            e.SpriteBatch.DrawString(DefaultFont, NewEffectLabel, NewEffectLabelPosition, Color.Black, 0.0f, Vector2.Zero, LabelTextScale, SpriteEffects.None, 1.0f);
+                            DrawHelpers.DrawStringWithSpecialNumbers(e.SpriteBatch, NewEffectValuePosition, NewEffectValue, ValueTextScale, Color.White);
                         }
+                        //  Draw a tooltip showing what effects are currently applied to this machine
+                        else if (HasAttachedAugmentors)
+                        {
+                            int Padding = 28;
+                            int MarginAfterIcon = 10;
 
-                        //Maybe also show MinutesUntilReady if it's not ReadyForHarvest?
+                            //  Compute the size of each icon
+                            Dictionary<AugmentorType, Vector2> IconSizes = new Dictionary<AugmentorType, Vector2>();
+                            foreach (KeyValuePair<AugmentorType, int> KVP in AttachedAugmentors.Where(x => x.Value > 0))
+                            {
+                                Augmentor.TryGetIconDetails(KVP.Key, out Texture2D IconTexture, out Rectangle IconSourcePosition, out float IconScale, out SpriteEffects IconEffects);
+                                Vector2 IconSize = new Vector2(IconSourcePosition.Width * IconScale, IconSourcePosition.Height * IconScale);
+                                IconSizes.Add(KVP.Key, IconSize);
+                            }
+                            float IconColumnWidth = IconSizes.Values.Max(x => x.Y);
+
+                            //  Compute the size of each row (each row shows the effect of a type of augmentor that has been applied to this machine)
+                            Dictionary<AugmentorType, Vector2> RowSizes = new Dictionary<AugmentorType, Vector2>();
+                            foreach (KeyValuePair<AugmentorType, int> KVP in AttachedAugmentors.Where(x => x.Value > 0))
+                            {
+                                double CurrentEffect = Augmentor.ComputeEffect(KVP.Key, KVP.Value, MI.RequiresInput);
+                                string Text = string.Format("{0}% ({1})", (CurrentEffect * 100.0).ToString("0.#"), KVP.Value);
+                                Vector2 TextSize = DrawHelpers.MeasureStringWithSpecialNumbers(Text, 1.0f, 4.0f);
+
+                                float RowWidth = IconColumnWidth + MarginAfterIcon + TextSize.X;
+                                float RowHeight = Math.Max(IconSizes[KVP.Key].Y, TextSize.Y);
+                                RowSizes.Add(KVP.Key, new Vector2(RowWidth, RowHeight));
+                            }
+
+                            //  Compute total size of tooltip, draw the background
+                            Vector2 ToolTipSize = new Vector2(Padding * 2 + RowSizes.Values.Max(x => x.X), Padding * 2 + RowSizes.Values.Sum(x => x.Y));
+                            Point ToolTipTopleft = DrawHelpers.GetTopleftPosition(new Point((int)ToolTipSize.X, (int)ToolTipSize.Y), MouseScreenPosition, 100);
+                            DrawHelpers.DrawBox(e.SpriteBatch, new Rectangle(ToolTipTopleft.X, ToolTipTopleft.Y, (int)ToolTipSize.X, (int)ToolTipSize.Y));
+                            float CurrentY = ToolTipTopleft.Y + Padding;
+
+                            //  Draw each row
+                            float RowStartX = ToolTipTopleft.X + Padding;
+                            foreach (KeyValuePair<AugmentorType, int> KVP in AttachedAugmentors.Where(x => x.Value > 0))
+                            {
+                                float CurrentX = RowStartX;
+                                float RowHeight = RowSizes[KVP.Key].Y;
+
+                                //  Draw the icon
+                                Augmentor.TryGetIconDetails(KVP.Key, out Texture2D IconTexture, out Rectangle IconSourcePosition, out float IconScale, out SpriteEffects IconEffects);
+                                Vector2 IconSize = IconSizes[KVP.Key];
+                                Vector2 IconPosition = new Vector2(CurrentX + (IconColumnWidth - IconSize.X) / 2.0f, CurrentY + (RowHeight - IconSize.Y) / 2.0f);
+                                e.SpriteBatch.Draw(IconTexture, IconPosition, IconSourcePosition, Color.White, 0f, Vector2.Zero, IconScale, IconEffects, 1f);
+                                CurrentX += IconColumnWidth + MarginAfterIcon;
+
+                                //  Draw the value
+                                double CurrentEffect = Augmentor.ComputeEffect(KVP.Key, KVP.Value, MI.RequiresInput);
+                                string Text = string.Format("{0}% ({1})", (CurrentEffect * 100.0).ToString("0.#"), KVP.Value);
+                                Vector2 TextSize = DrawHelpers.MeasureStringWithSpecialNumbers(Text, 1.0f, 0.0f);
+                                Vector2 TextPosition = new Vector2(CurrentX, CurrentY + (RowHeight - TextSize.Y) / 2.0f);
+                                DrawHelpers.DrawStringWithSpecialNumbers(e.SpriteBatch, TextPosition, Text, 1.0f, Color.White);
+
+                                CurrentY += RowHeight;
+                            }
+
+                            //Maybe also show MinutesUntilReady if it's not ReadyForHarvest?
+                        }
                     }
                 }
             }

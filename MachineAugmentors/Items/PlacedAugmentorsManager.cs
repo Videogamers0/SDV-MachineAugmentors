@@ -354,7 +354,7 @@ namespace MachineAugmentors.Items
         public AugmentedLocation Location { get; }
         public Point Position { get; }
         public Object Machine { get; }
-        public MachineInfo MachineInfo { get; }
+        //public MachineInfo MachineInfo { get; }
 
         /// <summary>Key = A type of augmentor, Value = How many of that Augmentor is placed on this tile</summary>
         public Dictionary<AugmentorType, int> Quantities { get; private set; }
@@ -366,7 +366,8 @@ namespace MachineAugmentors.Items
 
             this.Location = Location;
             this.Machine = Item;
-            this.MachineInfo = MachineInfo.GetMachineInfo(Machine);
+            //MachineInfo.TryGetMachineInfo(Machine, out MachineInfo MI);
+            //this.MachineInfo = MI;
             this.Position = new Point(X, Y);
             this.Quantities = new Dictionary<AugmentorType, int>();
         }

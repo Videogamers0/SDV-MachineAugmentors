@@ -49,38 +49,38 @@ namespace MachineAugmentors.Items
     [XmlRoot("OutputAugmentor", Namespace = "")]
     public class OutputAugmentor : Augmentor
     {
-        public static ReadOnlyCollection<MachineType> AugmentableMachineTypes = MachineInfo.IndexedMachineTypes.Where(x => {
-            return x.Key != MachineType.None;
-        }).Select(x => x.Key).ToList().AsReadOnly();
-
         public OutputAugmentor() : base(AugmentorType.Output) { }
 
         public static void OnProductsCollected(CheckForActionData CFAData, int AugmentorQuantity)
         {
-            MachineInfo Info = MachineInfo.GetMachineInfo(CFAData.Machine);
-            if (!AugmentableMachineTypes.Contains(Info.Type) || Info.RequiresInput || CFAData.CurrentHeldObject == null)
-                return;
+            if (MachineInfo.TryGetMachineInfo(CFAData.Machine, out MachineInfo Info))
+            {
+                if (!Info.AttachableAugmentors.Contains(AugmentorType.Output) || Info.RequiresInput || CFAData.CurrentHeldObject == null)
+                    return;
 
-            int PreviousStack = CFAData.CurrentHeldObjectQuantity;
-            int NewStack = ComputeNewValue(AugmentorQuantity, PreviousStack, Info.RequiresInput, out double Effect, out double DesiredNewValue);
-            CFAData.CurrentHeldObject.Stack = NewStack;
+                int PreviousStack = CFAData.CurrentHeldObjectQuantity;
+                int NewStack = ComputeNewValue(AugmentorQuantity, PreviousStack, Info.RequiresInput, out double Effect, out double DesiredNewValue);
+                CFAData.CurrentHeldObject.Stack = NewStack;
 
-            MachineAugmentorsMod.LogTrace(AugmentorType.Output, AugmentorQuantity, CFAData.Machine, Info.RequiresInput, CFAData.Machine.TileLocation, 
-                "HeldObject.Stack", PreviousStack, DesiredNewValue, NewStack, Effect);
+                MachineAugmentorsMod.LogTrace(AugmentorType.Output, AugmentorQuantity, CFAData.Machine, Info.RequiresInput, CFAData.Machine.TileLocation,
+                    "HeldObject.Stack", PreviousStack, DesiredNewValue, NewStack, Effect);
+            }
         }
 
         public static void OnInputsInserted(PerformObjectDropInData PODIData, int AugmentorQuantity)
         {
-            MachineInfo Info = MachineInfo.GetMachineInfo(PODIData.Machine);
-            if (!AugmentableMachineTypes.Contains(Info.Type) || !Info.RequiresInput || PODIData.CurrentHeldObject == null)
-                return;
+            if (MachineInfo.TryGetMachineInfo(PODIData.Machine, out MachineInfo Info))
+            {
+                if (!Info.AttachableAugmentors.Contains(AugmentorType.Output) || !Info.RequiresInput || PODIData.CurrentHeldObject == null)
+                    return;
 
-            int PreviousStack = PODIData.CurrentHeldObjectQuantity;
-            int NewStack = ComputeNewValue(AugmentorQuantity, PreviousStack, Info.RequiresInput, out double Effect, out double DesiredNewValue);
-            PODIData.CurrentHeldObject.Stack = NewStack;
+                int PreviousStack = PODIData.CurrentHeldObjectQuantity;
+                int NewStack = ComputeNewValue(AugmentorQuantity, PreviousStack, Info.RequiresInput, out double Effect, out double DesiredNewValue);
+                PODIData.CurrentHeldObject.Stack = NewStack;
 
-            MachineAugmentorsMod.LogTrace(AugmentorType.Output, AugmentorQuantity, PODIData.Machine, Info.RequiresInput, PODIData.Machine.TileLocation, 
-                "HeldObject.Stack", PreviousStack, DesiredNewValue, NewStack, Effect);
+                MachineAugmentorsMod.LogTrace(AugmentorType.Output, AugmentorQuantity, PODIData.Machine, Info.RequiresInput, PODIData.Machine.TileLocation,
+                    "HeldObject.Stack", PreviousStack, DesiredNewValue, NewStack, Effect);
+            }
         }
 
         public static double ComputeEffect(int AugmentorQuantity, bool RequiresInput)
@@ -102,7 +102,7 @@ namespace MachineAugmentors.Items
             return WeightedRound(DesiredNewValue);
         }
 
-        public override bool IsAugmentable(Object Item) { return AugmentableMachineTypes.Contains(MachineInfo.GetMachineType(Item)); }
+        public override bool IsAugmentable(Object Item) { return MachineInfo.TryGetMachineInfo(Item, out MachineInfo Info) && Info.AttachableAugmentors.Contains(AugmentorType.Output); }
         public override Color GetPrimaryIconColor() { return new Color(1f, 1f, 1f, 1f); }
         public override int GetPurchasePrice() { return AugmentorConfig.BasePrice; }
         public override int GetSellPrice() { return GetPurchasePrice() / 2; }
@@ -116,67 +116,67 @@ namespace MachineAugmentors.Items
     [XmlRoot("SpeedAugmentor", Namespace = "")]
     public class SpeedAugmentor : Augmentor
     {
-        public static ReadOnlyCollection<MachineType> AugmentableMachineTypes = MachineInfo.IndexedMachineTypes.Where(x => {
-            return x.Key != MachineType.None;
-        }).Select(x => x.Key).ToList().AsReadOnly();
-
         public SpeedAugmentor() : base(AugmentorType.Speed) { }
 
         public static void OnProductsCollected(CheckForActionData CFAData, int AugmentorQuantity)
         {
-            MachineInfo Info = MachineInfo.GetMachineInfo(CFAData.Machine);
-            if (!AugmentableMachineTypes.Contains(Info.Type) || AugmentorQuantity <= 0 || Info.RequiresInput || CFAData.Machine.readyForHarvest.Value)
-                return;
+            if (MachineInfo.TryGetMachineInfo(CFAData.Machine, out MachineInfo Info))
+            {
+                if (!Info.AttachableAugmentors.Contains(AugmentorType.Speed) || AugmentorQuantity <= 0 || Info.RequiresInput || CFAData.Machine.readyForHarvest.Value)
+                    return;
 
-            int PreviousMinutes = CFAData.CurrentMinutesUntilReady;
-            int NewMinutes = ComputeNewValue(AugmentorQuantity, PreviousMinutes, Info.RequiresInput, out double Effect, out double DesiredNewValue);
-            CFAData.Machine.MinutesUntilReady = NewMinutes;
-            if (NewMinutes <= 0)
-                CFAData.Machine.readyForHarvest.Value = true;
+                int PreviousMinutes = CFAData.CurrentMinutesUntilReady;
+                int NewMinutes = ComputeNewValue(AugmentorQuantity, PreviousMinutes, Info.RequiresInput, out double Effect, out double DesiredNewValue);
+                CFAData.Machine.MinutesUntilReady = NewMinutes;
+                if (NewMinutes <= 0)
+                    CFAData.Machine.readyForHarvest.Value = true;
 
-            MachineAugmentorsMod.LogTrace(AugmentorType.Speed, AugmentorQuantity, CFAData.Machine, Info.RequiresInput, CFAData.Machine.TileLocation, 
-                "HeldObject.MinutesUntilReady", PreviousMinutes, DesiredNewValue, NewMinutes, Effect);
+                MachineAugmentorsMod.LogTrace(AugmentorType.Speed, AugmentorQuantity, CFAData.Machine, Info.RequiresInput, CFAData.Machine.TileLocation,
+                    "HeldObject.MinutesUntilReady", PreviousMinutes, DesiredNewValue, NewMinutes, Effect);
+            }
         }
 
         public static void OnInputsInserted(PerformObjectDropInData PODIData, int AugmentorQuantity)
         {
-            MachineInfo Info = MachineInfo.GetMachineInfo(PODIData.Machine);
-            if (!AugmentableMachineTypes.Contains(Info.Type) || AugmentorQuantity <= 0 || !Info.RequiresInput || PODIData.Machine.readyForHarvest.Value)
-                return;
-
-            int PreviousMinutes = PODIData.CurrentMinutesUntilReady;
-            int NewMinutes = ComputeNewValue(AugmentorQuantity, PreviousMinutes, Info.RequiresInput, out double Effect, out double DesiredNewValue);
-
-            if (PreviousMinutes != NewMinutes)
+            if (MachineInfo.TryGetMachineInfo(PODIData.Machine, out MachineInfo Info))
             {
-                //  Find the GameLocation of the Machine
-                //  (Possible TODO: If using Automate mod, may need to iterate all GameLocations until finding the one where GameLocation.Objects[Machine Tile Location] is the Machine)
-                GameLocation MachineLocation = null;
-                if (Game1.player.currentLocation.Objects.TryGetValue(PODIData.Machine.TileLocation, out Object PlacedMachine) && PlacedMachine == PODIData.Machine)
-                    MachineLocation = Game1.player.currentLocation;
+                if (!Info.AttachableAugmentors.Contains(AugmentorType.Speed) || AugmentorQuantity <= 0 || !Info.RequiresInput || PODIData.Machine.readyForHarvest.Value)
+                    return;
 
-                //  There seems to be a bug where there is no product if the machine is instantly done processing.
-                //NewMinutes = Math.Max(10, NewMinutes); // temporary fix - require at least one 10-minute processing cycle
-                //  It looks like Object.checkForAction happens right AFTER Object.performObjectDropIn, and checkForAction is setting Object.heldObject=null if Object.readyForHarvest=true
-                //  So set a flag that tells GamePatches.CheckForAction_Prefix to skip execution
-                if (NewMinutes <= 0)
-                    GamePatches.SkipNextCheckForAction = true;
+                int PreviousMinutes = PODIData.CurrentMinutesUntilReady;
+                int NewMinutes = ComputeNewValue(AugmentorQuantity, PreviousMinutes, Info.RequiresInput, out double Effect, out double DesiredNewValue);
 
-                if (MachineLocation != null)
+                if (PreviousMinutes != NewMinutes)
                 {
-                    int Elapsed = PreviousMinutes - NewMinutes;
-                    PODIData.Machine.minutesElapsed(Elapsed, MachineLocation);
-                }
-                else
-                {
-                    PODIData.Machine.MinutesUntilReady = NewMinutes;
+                    //  Find the GameLocation of the Machine
+                    //  (Possible TODO: If using Automate mod, may need to iterate all GameLocations until finding the one where GameLocation.Objects[Machine Tile Location] is the Machine)
+                    GameLocation MachineLocation = null;
+                    if (Game1.player.currentLocation.Objects.TryGetValue(PODIData.Machine.TileLocation, out Object PlacedMachine) && PlacedMachine == PODIData.Machine)
+                        MachineLocation = Game1.player.currentLocation;
+
+                    //  There seems to be a bug where there is no product if the machine is instantly done processing.
+                    //NewMinutes = Math.Max(10, NewMinutes); // temporary fix - require at least one 10-minute processing cycle
+                    //  It looks like Object.checkForAction happens right AFTER Object.performObjectDropIn, and checkForAction is setting Object.heldObject=null if Object.readyForHarvest=true
+                    //  So set a flag that tells GamePatches.CheckForAction_Prefix to skip execution
                     if (NewMinutes <= 0)
-                        PODIData.Machine.readyForHarvest.Value = true;
-                }
-            }
+                        GamePatches.SkipNextCheckForAction = true;
 
-            MachineAugmentorsMod.LogTrace(AugmentorType.Speed, AugmentorQuantity, PODIData.Machine, Info.RequiresInput, PODIData.Machine.TileLocation,
-                "HeldObject.MinutesUntilReady", PreviousMinutes, DesiredNewValue, NewMinutes, Effect);
+                    if (MachineLocation != null)
+                    {
+                        int Elapsed = PreviousMinutes - NewMinutes;
+                        PODIData.Machine.minutesElapsed(Elapsed, MachineLocation);
+                    }
+                    else
+                    {
+                        PODIData.Machine.MinutesUntilReady = NewMinutes;
+                        if (NewMinutes <= 0)
+                            PODIData.Machine.readyForHarvest.Value = true;
+                    }
+                }
+
+                MachineAugmentorsMod.LogTrace(AugmentorType.Speed, AugmentorQuantity, PODIData.Machine, Info.RequiresInput, PODIData.Machine.TileLocation,
+                    "HeldObject.MinutesUntilReady", PreviousMinutes, DesiredNewValue, NewMinutes, Effect);
+            }
         }
 
         public static double ComputeEffect(int AugmentorQuantity, bool RequiresInput)
@@ -207,7 +207,7 @@ namespace MachineAugmentors.Items
             return NewValue;
         }
 
-        public override bool IsAugmentable(Object Item) { return AugmentableMachineTypes.Contains(MachineInfo.GetMachineType(Item)); }
+        public override bool IsAugmentable(Object Item) { return MachineInfo.TryGetMachineInfo(Item, out MachineInfo Info) && Info.AttachableAugmentors.Contains(AugmentorType.Speed); }
         public override Color GetPrimaryIconColor() { return new Color(1f, 1f, 1f, 1f); }
         public override int GetPurchasePrice() { return AugmentorConfig.BasePrice; }
         public override int GetSellPrice() { return GetPurchasePrice() / 2; }
@@ -221,10 +221,6 @@ namespace MachineAugmentors.Items
     [XmlRoot("EfficiencyAugmentor", Namespace = "")]
     public class EfficiencyAugmentor : Augmentor
     {
-        public static ReadOnlyCollection<MachineType> AugmentableMachineTypes = MachineInfo.IndexedMachineTypes.Where(x => {
-            return x.Key != MachineType.None && x.Value.RequiresInput;
-        }).Select(x => x.Key).ToList().AsReadOnly();
-
         public EfficiencyAugmentor() : base(AugmentorType.Efficiency) { }
 
         public static void OnProductsCollected(CheckForActionData CFAData, int AugmentorQuantity)
@@ -242,55 +238,57 @@ namespace MachineAugmentors.Items
 
         public static void OnInputsInserted(PerformObjectDropInData PODIData, int AugmentorQuantity)
         {
-            MachineInfo Info = MachineInfo.GetMachineInfo(PODIData.Machine);
-            if (!AugmentableMachineTypes.Contains(Info.Type) || AugmentorQuantity <= 0 || !Info.RequiresInput || PODIData.Input == null)
-                return;
-
-            int PreviousAmountInserted = PODIData.PreviousInputQuantity - PODIData.CurrentInputQuantity;
-
-            int NewAmountInserted;
-            double Effect;
-            double DesiredNewValue;
-            if (PreviousAmountInserted <= 0)
+            if (MachineInfo.TryGetMachineInfo(PODIData.Machine, out MachineInfo Info))
             {
-                //  No clue why, but for some machines the game hasn't actually taken the input yet by the time Object.performObjectDropIn finishes.
-                //  so assume the input amount was = to 1 when computing the refund.
-                NewAmountInserted = ComputeNewValue(AugmentorQuantity, 1, Info.RequiresInput, out Effect, out DesiredNewValue)
-                    - 1 - Math.Abs(PreviousAmountInserted); //  -1 because we assume it required at least 1 input, -PreviousInputQuantityUsed because another augmentor whose effect could have been applied first may have set the quantity to a negative value to allow saving a material
-            }
-            else
-            {
-                NewAmountInserted = ComputeNewValue(AugmentorQuantity, PreviousAmountInserted, Info.RequiresInput, out Effect, out DesiredNewValue);
-            }
+                if (!Info.AttachableAugmentors.Contains(AugmentorType.Efficiency) || AugmentorQuantity <= 0 || !Info.RequiresInput || PODIData.Input == null)
+                    return;
 
-            int RefundAmt = PreviousAmountInserted - NewAmountInserted;
-            if (RefundAmt > 0)
-            {
-                bool WasStackDepleted = PODIData.Input.Stack <= 0;
-                PODIData.Input.Stack += RefundAmt;
+                int PreviousAmountInserted = PODIData.PreviousInputQuantity - PODIData.CurrentInputQuantity;
 
-                //  If Stack was set to 0 by the game, then the game would have removed it from their inventory, and so they wouldn't be able to receive the refunded quantity
-                if (WasStackDepleted && PODIData.WasInputInInventory && Game1.player.Items[PODIData.InputInventoryIndex.Value] == null)
+                int NewAmountInserted;
+                double Effect;
+                double DesiredNewValue;
+                if (PreviousAmountInserted <= 0)
                 {
-                    Game1.player.addItemToInventory(PODIData.Input, PODIData.InputInventoryIndex.Value);
+                    //  No clue why, but for some machines the game hasn't actually taken the input yet by the time Object.performObjectDropIn finishes.
+                    //  so assume the input amount was = to 1 when computing the refund.
+                    NewAmountInserted = ComputeNewValue(AugmentorQuantity, 1, Info.RequiresInput, out Effect, out DesiredNewValue)
+                        - 1 - Math.Abs(PreviousAmountInserted); //  -1 because we assume it required at least 1 input, -PreviousInputQuantityUsed because another augmentor whose effect could have been applied first may have set the quantity to a negative value to allow saving a material
                 }
-            }
-
-            //  Refund coal when processing ores
-            if (IsOre(PODIData.Input))
-            {
-                double Chance = 1.0 - Effect;
-                int SpawnedQuantity = WeightedRound(Chance);
-                if (SpawnedQuantity > 0)
+                else
                 {
-                    Object Coal = new Object(382, SpawnedQuantity, false, -1, 0);
-                    int SpawnDirection = Randomizer.Next(4);
-                    Game1.createItemDebris(Coal, PODIData.Machine.TileLocation * Game1.tileSize, SpawnDirection, null, -1);
+                    NewAmountInserted = ComputeNewValue(AugmentorQuantity, PreviousAmountInserted, Info.RequiresInput, out Effect, out DesiredNewValue);
                 }
-            }
 
-            MachineAugmentorsMod.LogTrace(AugmentorType.Efficiency, AugmentorQuantity, PODIData.Machine, Info.RequiresInput, PODIData.Machine.TileLocation,
-                "Input.Stack", PreviousAmountInserted, DesiredNewValue, NewAmountInserted, Effect);
+                int RefundAmt = PreviousAmountInserted - NewAmountInserted;
+                if (RefundAmt > 0)
+                {
+                    bool WasStackDepleted = PODIData.Input.Stack <= 0;
+                    PODIData.Input.Stack += RefundAmt;
+
+                    //  If Stack was set to 0 by the game, then the game would have removed it from their inventory, and so they wouldn't be able to receive the refunded quantity
+                    if (WasStackDepleted && PODIData.WasInputInInventory && Game1.player.Items[PODIData.InputInventoryIndex.Value] == null)
+                    {
+                        Game1.player.addItemToInventory(PODIData.Input, PODIData.InputInventoryIndex.Value);
+                    }
+                }
+
+                //  Refund coal when processing ores
+                if (IsOre(PODIData.Input))
+                {
+                    double Chance = 1.0 - Effect;
+                    int SpawnedQuantity = WeightedRound(Chance);
+                    if (SpawnedQuantity > 0)
+                    {
+                        Object Coal = new Object(382, SpawnedQuantity, false, -1, 0);
+                        int SpawnDirection = Randomizer.Next(4);
+                        Game1.createItemDebris(Coal, PODIData.Machine.TileLocation * Game1.tileSize, SpawnDirection, null, -1);
+                    }
+                }
+
+                MachineAugmentorsMod.LogTrace(AugmentorType.Efficiency, AugmentorQuantity, PODIData.Machine, Info.RequiresInput, PODIData.Machine.TileLocation,
+                    "Input.Stack", PreviousAmountInserted, DesiredNewValue, NewAmountInserted, Effect);
+            }
         }
 
         public static double ComputeEffect(int AugmentorQuantity, bool RequiresInput)
@@ -312,7 +310,7 @@ namespace MachineAugmentors.Items
             return WeightedRound(DesiredNewValue);
         }
 
-        public override bool IsAugmentable(Object Item) { return AugmentableMachineTypes.Contains(MachineInfo.GetMachineType(Item)); }
+        public override bool IsAugmentable(Object Item) { return MachineInfo.TryGetMachineInfo(Item, out MachineInfo Info) && Info.AttachableAugmentors.Contains(AugmentorType.Efficiency); }
         public override Color GetPrimaryIconColor() { return new Color(1f, 1f, 1f, 1f); }
         public override int GetPurchasePrice() { return AugmentorConfig.BasePrice; }
         public override int GetSellPrice() { return GetPurchasePrice() / 2; }
@@ -326,38 +324,38 @@ namespace MachineAugmentors.Items
     [XmlRoot("QualityAugmentor", Namespace = "")]
     public class QualityAugmentor : Augmentor
     {
-        public static ReadOnlyCollection<MachineType> AugmentableMachineTypes = MachineInfo.IndexedMachineTypes.Where(x => {
-            return x.Key != MachineType.None && x.Value.HasQualityProducts;
-        }).Select(x => x.Key).ToList().AsReadOnly();
-
         public QualityAugmentor() : base(AugmentorType.Quality) { }
 
         public static void OnProductsCollected(CheckForActionData CFAData, int AugmentorQuantity)
         {
-            MachineInfo Info = MachineInfo.GetMachineInfo(CFAData.Machine);
-            if (!AugmentableMachineTypes.Contains(Info.Type) || AugmentorQuantity <= 0 || Info.RequiresInput || !Info.HasQualityProducts)
-                return;
+            if (MachineInfo.TryGetMachineInfo(CFAData.Machine, out MachineInfo Info))
+            {
+                if (!Info.AttachableAugmentors.Contains(AugmentorType.Quality) || AugmentorQuantity <= 0 || Info.RequiresInput || !Info.HasQualityProducts)
+                    return;
 
-            int PreviousQuality = CFAData.CurrentHeldObject.Quality;
-            int NewQuality = ComputeNewValue(AugmentorQuantity, PreviousQuality, Info.RequiresInput, out double Effect, out double DesiredNewValue);
-            CFAData.CurrentHeldObject.Quality = NewQuality;
+                int PreviousQuality = CFAData.CurrentHeldObject.Quality;
+                int NewQuality = ComputeNewValue(AugmentorQuantity, PreviousQuality, Info.RequiresInput, out double Effect, out double DesiredNewValue);
+                CFAData.CurrentHeldObject.Quality = NewQuality;
 
-            MachineAugmentorsMod.LogTrace(AugmentorType.Quality, AugmentorQuantity, CFAData.Machine, Info.RequiresInput, CFAData.Machine.TileLocation,
-                "HeldObject.Quality", PreviousQuality, DesiredNewValue, NewQuality, Effect);
+                MachineAugmentorsMod.LogTrace(AugmentorType.Quality, AugmentorQuantity, CFAData.Machine, Info.RequiresInput, CFAData.Machine.TileLocation,
+                    "HeldObject.Quality", PreviousQuality, DesiredNewValue, NewQuality, Effect);
+            }
         }
 
         public static void OnInputsInserted(PerformObjectDropInData PODIData, int AugmentorQuantity)
         {
-            MachineInfo Info = MachineInfo.GetMachineInfo(PODIData.Machine);
-            if (!AugmentableMachineTypes.Contains(Info.Type) || AugmentorQuantity <= 0 || !Info.RequiresInput || !Info.HasQualityProducts)
-                return;
+            if (MachineInfo.TryGetMachineInfo(PODIData.Machine, out MachineInfo Info))
+            {
+                if (!Info.AttachableAugmentors.Contains(AugmentorType.Quality) || AugmentorQuantity <= 0 || !Info.RequiresInput || !Info.HasQualityProducts)
+                    return;
 
-            int PreviousQuality = PODIData.CurrentHeldObject.Quality;
-            int NewQuality = ComputeNewValue(AugmentorQuantity, PreviousQuality, Info.RequiresInput, out double Effect, out double DesiredNewValue);
-            PODIData.CurrentHeldObject.Quality = NewQuality;
+                int PreviousQuality = PODIData.CurrentHeldObject.Quality;
+                int NewQuality = ComputeNewValue(AugmentorQuantity, PreviousQuality, Info.RequiresInput, out double Effect, out double DesiredNewValue);
+                PODIData.CurrentHeldObject.Quality = NewQuality;
 
-            MachineAugmentorsMod.LogTrace(AugmentorType.Quality, AugmentorQuantity, PODIData.Machine, Info.RequiresInput, PODIData.Machine.TileLocation,
-                "HeldObject.Quality", PreviousQuality, DesiredNewValue, NewQuality, Effect);
+                MachineAugmentorsMod.LogTrace(AugmentorType.Quality, AugmentorQuantity, PODIData.Machine, Info.RequiresInput, PODIData.Machine.TileLocation,
+                    "HeldObject.Quality", PreviousQuality, DesiredNewValue, NewQuality, Effect);
+            }
         }
 
         public static double ComputeEffect(int AugmentorQuantity, bool RequiresInput)
@@ -385,7 +383,7 @@ namespace MachineAugmentors.Items
                 return PreviousValue;
         }
 
-        public override bool IsAugmentable(Object Item) { return AugmentableMachineTypes.Contains(MachineInfo.GetMachineType(Item)); }
+        public override bool IsAugmentable(Object Item) { return MachineInfo.TryGetMachineInfo(Item, out MachineInfo Info) && Info.AttachableAugmentors.Contains(AugmentorType.Quality); }
         public override Color GetPrimaryIconColor() { return new Color(1f, 1f, 1f, 1f); }
         public override int GetPurchasePrice() { return AugmentorConfig.BasePrice; }
         public override int GetSellPrice() { return GetPurchasePrice() / 2; }
@@ -399,10 +397,6 @@ namespace MachineAugmentors.Items
     [XmlRoot("ProductionAugmentor", Namespace = "")]
     public class ProductionAugmentor : Augmentor
     {
-        public static ReadOnlyCollection<MachineType> AugmentableMachineTypes = MachineInfo.IndexedMachineTypes.Where(x => {
-            return x.Key != MachineType.None && x.Value.RequiresInput;
-        }).Select(x => x.Key).ToList().AsReadOnly();
-
         public ProductionAugmentor() : base(AugmentorType.Production) { }
 
         public static void OnProductsCollected(CheckForActionData CFAData, int AugmentorQuantity)
@@ -418,65 +412,66 @@ namespace MachineAugmentors.Items
 
         public static void OnInputsInserted(PerformObjectDropInData PODIData, int AugmentorQuantity)
         {
-            MachineInfo Info = MachineInfo.GetMachineInfo(PODIData.Machine);
-            if (!AugmentableMachineTypes.Contains(Info.Type) || AugmentorQuantity <= 0 || !Info.RequiresInput || PODIData.CurrentHeldObject == null || PODIData.Input == null)
-                return;
-
-            //  Compute the maximum multiplier we can apply to the input and output based on how many more of the inputs the player has
-            int PreviousInputQuantityUsed = PODIData.PreviousInputQuantity - PODIData.CurrentInputQuantity;
-            double MaxMultiplier = PreviousInputQuantityUsed == 0 ? int.MaxValue : Math.Abs(PODIData.PreviousInputQuantity * 1.0 / PreviousInputQuantityUsed);
-
-            //  Modify the output
-            int PreviousOutputStack = PODIData.CurrentHeldObjectQuantity;
-            int NewOutputStack = ComputeNewValue(AugmentorQuantity, MaxMultiplier, PreviousOutputStack, Info.RequiresInput, out double OutputEffect, out double DesiredNewOutputValue);
-            PODIData.CurrentHeldObject.Stack = NewOutputStack;
-            MachineAugmentorsMod.LogTrace(AugmentorType.Production, AugmentorQuantity, PODIData.Machine, Info.RequiresInput, PODIData.Machine.TileLocation,
-                "HeldObject.Stack", PreviousOutputStack, DesiredNewOutputValue, NewOutputStack, OutputEffect);
-
-            //  Modify the input
-            int CurrentInputQuantityUsed;
-            double InputEffect;
-            double DesiredNewInputValue;
-            if (PreviousInputQuantityUsed <= 0)
+            if (MachineInfo.TryGetMachineInfo(PODIData.Machine, out MachineInfo Info))
             {
-                //  No clue why, but for some machines the game hasn't actually taken the input yet by the time Object.performObjectDropIn finishes.
-                //  so assume the input amount was = to 1.
-                CurrentInputQuantityUsed = ComputeNewValue(AugmentorQuantity, MaxMultiplier, 1, Info.RequiresInput, out InputEffect, out DesiredNewInputValue)
-                    - 1 - Math.Abs(PreviousInputQuantityUsed); //  -1 because we assume it required at least 1 input, -PreviousInputQuantityUsed because EfficiencyAugmentor may have set the quantity to a negative value to allow saving a material
-            }
-            else
-            {
-                CurrentInputQuantityUsed = ComputeNewValue(AugmentorQuantity, MaxMultiplier, PreviousInputQuantityUsed, Info.RequiresInput, out InputEffect, out DesiredNewInputValue);
-            }
-            int NewInputStack = PODIData.PreviousInputQuantity - CurrentInputQuantityUsed;
-            PODIData.Input.Stack = NewInputStack;
-            if (NewInputStack <= 0)
-            {
-                if (PODIData.WasInputInInventory)
-                    Game1.player.removeItemFromInventory(PODIData.Input);
+                if (!Info.AttachableAugmentors.Contains(AugmentorType.Production) || AugmentorQuantity <= 0 || !Info.RequiresInput || PODIData.CurrentHeldObject == null || PODIData.Input == null)
+                    return;
+
+                //  Compute the maximum multiplier we can apply to the input and output based on how many more of the inputs the player has
+                int PreviousInputQuantityUsed = PODIData.PreviousInputQuantity - PODIData.CurrentInputQuantity;
+                double MaxMultiplier = PreviousInputQuantityUsed == 0 ? int.MaxValue : Math.Abs(PODIData.PreviousInputQuantity * 1.0 / PreviousInputQuantityUsed);
+
+                //  Modify the output
+                int PreviousOutputStack = PODIData.CurrentHeldObjectQuantity;
+                int NewOutputStack = ComputeNewValue(AugmentorQuantity, MaxMultiplier, PreviousOutputStack, Info.RequiresInput, out double OutputEffect, out double DesiredNewOutputValue);
+                PODIData.CurrentHeldObject.Stack = NewOutputStack;
+                MachineAugmentorsMod.LogTrace(AugmentorType.Production, AugmentorQuantity, PODIData.Machine, Info.RequiresInput, PODIData.Machine.TileLocation,
+                    "HeldObject.Stack", PreviousOutputStack, DesiredNewOutputValue, NewOutputStack, OutputEffect);
+
+                //  Modify the input
+                int CurrentInputQuantityUsed;
+                double InputEffect;
+                double DesiredNewInputValue;
+                if (PreviousInputQuantityUsed <= 0)
+                {
+                    //  No clue why, but for some machines the game hasn't actually taken the input yet by the time Object.performObjectDropIn finishes.
+                    //  so assume the input amount was = to 1.
+                    CurrentInputQuantityUsed = ComputeNewValue(AugmentorQuantity, MaxMultiplier, 1, Info.RequiresInput, out InputEffect, out DesiredNewInputValue)
+                        - 1 - Math.Abs(PreviousInputQuantityUsed); //  -1 because we assume it required at least 1 input, -PreviousInputQuantityUsed because EfficiencyAugmentor may have set the quantity to a negative value to allow saving a material
+                }
                 else
                 {
-                    PODIData.Input.Stack = 1; // Just a failsafe to avoid glitched out Items with zero quantity, such as if the input came from a chest due to the Automate mod
+                    CurrentInputQuantityUsed = ComputeNewValue(AugmentorQuantity, MaxMultiplier, PreviousInputQuantityUsed, Info.RequiresInput, out InputEffect, out DesiredNewInputValue);
                 }
+                int NewInputStack = PODIData.PreviousInputQuantity - CurrentInputQuantityUsed;
+                PODIData.Input.Stack = NewInputStack;
+                if (NewInputStack <= 0)
+                {
+                    if (PODIData.WasInputInInventory)
+                        Game1.player.removeItemFromInventory(PODIData.Input);
+                    else
+                    {
+                        PODIData.Input.Stack = 1; // Just a failsafe to avoid glitched out Items with zero quantity, such as if the input came from a chest due to the Automate mod
+                    }
+                }
+
+                ////  Modify the input
+                //int CurrentInputQuantityUsed = ComputeNewValue(AugmentorQuantity, MaxMultiplier, PreviousInputQuantityUsed, Info.RequiresInput, out double InputEffect, out double DesiredNewInputValue);
+                //int NewInputStack = PODIData.PreviousInputQuantity - CurrentInputQuantityUsed;
+                //PODIData.Input.Stack = NewInputStack;
+                //if (NewInputStack <= 0)
+                //{
+                //    if (PODIData.WasInputInInventory)
+                //        Game1.player.removeItemFromInventory(PODIData.Input);
+                //    else
+                //    {
+                //        PODIData.Input.Stack = 1; // Just a failsafe to avoid glitched out Items with zero quantity, such as if the input came from a chest due to the Automate mod
+                //    }
+                //}
+
+                MachineAugmentorsMod.LogTrace(AugmentorType.Production, AugmentorQuantity, PODIData.Machine, Info.RequiresInput, PODIData.Machine.TileLocation,
+                    "Input-UsedAmount", PreviousInputQuantityUsed, DesiredNewInputValue, CurrentInputQuantityUsed, InputEffect);
             }
-
-
-            ////  Modify the input
-            //int CurrentInputQuantityUsed = ComputeNewValue(AugmentorQuantity, MaxMultiplier, PreviousInputQuantityUsed, Info.RequiresInput, out double InputEffect, out double DesiredNewInputValue);
-            //int NewInputStack = PODIData.PreviousInputQuantity - CurrentInputQuantityUsed;
-            //PODIData.Input.Stack = NewInputStack;
-            //if (NewInputStack <= 0)
-            //{
-            //    if (PODIData.WasInputInInventory)
-            //        Game1.player.removeItemFromInventory(PODIData.Input);
-            //    else
-            //    {
-            //        PODIData.Input.Stack = 1; // Just a failsafe to avoid glitched out Items with zero quantity, such as if the input came from a chest due to the Automate mod
-            //    }
-            //}
-
-            MachineAugmentorsMod.LogTrace(AugmentorType.Production, AugmentorQuantity, PODIData.Machine, Info.RequiresInput, PODIData.Machine.TileLocation,
-                "Input-UsedAmount", PreviousInputQuantityUsed, DesiredNewInputValue, CurrentInputQuantityUsed, InputEffect);
         }
 
         public static double ComputeEffect(int AugmentorQuantity, bool RequiresInput)
@@ -500,7 +495,7 @@ namespace MachineAugmentors.Items
             return WeightedRound(DesiredNewValue);
         }
 
-        public override bool IsAugmentable(Object Item) { return AugmentableMachineTypes.Contains(MachineInfo.GetMachineType(Item)); }
+        public override bool IsAugmentable(Object Item) { return MachineInfo.TryGetMachineInfo(Item, out MachineInfo Info) && Info.AttachableAugmentors.Contains(AugmentorType.Production); }
         public override Color GetPrimaryIconColor() { return new Color(1f, 1f, 1f, 1f); }
         public override int GetPurchasePrice() { return AugmentorConfig.BasePrice; }
         public override int GetSellPrice() { return GetPurchasePrice() / 2; }
@@ -514,52 +509,52 @@ namespace MachineAugmentors.Items
     [XmlRoot("DuplicationAugmentor", Namespace = "")]
     public class DuplicationAugmentor : Augmentor
     {
-        public static ReadOnlyCollection<MachineType> AugmentableMachineTypes = MachineInfo.IndexedMachineTypes.Where(x => {
-            return x.Key != MachineType.None;
-        }).Select(x => x.Key).ToList().AsReadOnly();
-
         public DuplicationAugmentor() : base(AugmentorType.Duplication) { }
 
         public static void OnProductsCollected(CheckForActionData CFAData, int AugmentorQuantity)
         {
-            MachineInfo Info = MachineInfo.GetMachineInfo(CFAData.Machine);
-            if (!AugmentableMachineTypes.Contains(Info.Type) || AugmentorQuantity <= 0 || Info.RequiresInput || CFAData.Machine.readyForHarvest)
-                return;
-
-            bool Success = SpawnDuplicate(AugmentorQuantity, CFAData.CurrentMinutesUntilReady, Info.RequiresInput, out double Chance);
-            if (Success)
+            if (MachineInfo.TryGetMachineInfo(CFAData.Machine, out MachineInfo Info))
             {
-                if (CFAData.Machine.getOne() is Object Duplicate)
-                {
-                    Duplicate.Stack = 1;
-                    int SpawnDirection = Randomizer.Next(4);
-                    Game1.createItemDebris(Duplicate, Game1.player.getStandingPosition(), SpawnDirection, null, -1);
-                }
-            }
+                if (!Info.AttachableAugmentors.Contains(AugmentorType.Duplication) || AugmentorQuantity <= 0 || Info.RequiresInput || CFAData.Machine.readyForHarvest)
+                    return;
 
-            MachineAugmentorsMod.LogTrace(AugmentorType.Duplication, AugmentorQuantity, CFAData.Machine, Info.RequiresInput, CFAData.Machine.TileLocation,
-                "CreateDuplicate", 0, Chance, Convert.ToInt32(Success), Chance);
+                bool Success = SpawnDuplicate(AugmentorQuantity, CFAData.CurrentMinutesUntilReady, Info.RequiresInput, out double Chance);
+                if (Success)
+                {
+                    if (CFAData.Machine.getOne() is Object Duplicate)
+                    {
+                        Duplicate.Stack = 1;
+                        int SpawnDirection = Randomizer.Next(4);
+                        Game1.createItemDebris(Duplicate, Game1.player.getStandingPosition(), SpawnDirection, null, -1);
+                    }
+                }
+
+                MachineAugmentorsMod.LogTrace(AugmentorType.Duplication, AugmentorQuantity, CFAData.Machine, Info.RequiresInput, CFAData.Machine.TileLocation,
+                    "CreateDuplicate", 0, Chance, Convert.ToInt32(Success), Chance);
+            }
         }
 
         public static void OnInputsInserted(PerformObjectDropInData PODIData, int AugmentorQuantity)
         {
-            MachineInfo Info = MachineInfo.GetMachineInfo(PODIData.Machine);
-            if (!AugmentableMachineTypes.Contains(Info.Type) || AugmentorQuantity <= 0 || !Info.RequiresInput || PODIData.Machine.readyForHarvest)
-                return;
-
-            bool Success = SpawnDuplicate(AugmentorQuantity, PODIData.CurrentMinutesUntilReady, Info.RequiresInput, out double Chance);
-            if (Success)
+            if (MachineInfo.TryGetMachineInfo(PODIData.Machine, out MachineInfo Info))
             {
-                if (PODIData.Machine.getOne() is Object Duplicate)
-                {
-                    Duplicate.Stack = 1;
-                    int SpawnDirection = Randomizer.Next(4);
-                    Game1.createItemDebris(Duplicate, Game1.player.getStandingPosition(), SpawnDirection, null, -1);
-                }
-            }
+                if (!Info.AttachableAugmentors.Contains(AugmentorType.Duplication) || AugmentorQuantity <= 0 || !Info.RequiresInput || PODIData.Machine.readyForHarvest)
+                    return;
 
-            MachineAugmentorsMod.LogTrace(AugmentorType.Duplication, AugmentorQuantity, PODIData.Machine, Info.RequiresInput, PODIData.Machine.TileLocation,
-                "CreateDuplicate", 0, Chance, Convert.ToInt32(Success), Chance);
+                bool Success = SpawnDuplicate(AugmentorQuantity, PODIData.CurrentMinutesUntilReady, Info.RequiresInput, out double Chance);
+                if (Success)
+                {
+                    if (PODIData.Machine.getOne() is Object Duplicate)
+                    {
+                        Duplicate.Stack = 1;
+                        int SpawnDirection = Randomizer.Next(4);
+                        Game1.createItemDebris(Duplicate, Game1.player.getStandingPosition(), SpawnDirection, null, -1);
+                    }
+                }
+
+                MachineAugmentorsMod.LogTrace(AugmentorType.Duplication, AugmentorQuantity, PODIData.Machine, Info.RequiresInput, PODIData.Machine.TileLocation,
+                    "CreateDuplicate", 0, Chance, Convert.ToInt32(Success), Chance);
+            }
         }
 
         public const int MinutesPerDay = 60 * 24;
@@ -587,7 +582,7 @@ namespace MachineAugmentors.Items
             return RollDice(Chance);
         }
 
-        public override bool IsAugmentable(Object Item) { return AugmentableMachineTypes.Contains(MachineInfo.GetMachineType(Item)); }
+        public override bool IsAugmentable(Object Item) { return MachineInfo.TryGetMachineInfo(Item, out MachineInfo Info) && Info.AttachableAugmentors.Contains(AugmentorType.Duplication); }
         public override Color GetPrimaryIconColor() { return new Color(1f, 1f, 1f, 1f); }
         public override int GetPurchasePrice() { return AugmentorConfig.BasePrice; }
         public override int GetSellPrice() { return GetPurchasePrice() / 2; }

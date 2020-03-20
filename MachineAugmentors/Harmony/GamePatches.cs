@@ -183,11 +183,6 @@ namespace MachineAugmentors.Harmony
         {
             try
             {
-#if DEBUG
-                //  For testing, draw icons on every placed Object to see how they look
-                //Augmentor.DrawIconsOnTile(spriteBatch, Enum.GetValues(typeof(AugmentorType)).Cast<AugmentorType>().ToList(), x, y, 0.6f);
-#endif
-
                 //  Draw the augmentors that are attached to this machine, if any
                 if (PlacedAugmentorsManager.Instance != null)
                 {

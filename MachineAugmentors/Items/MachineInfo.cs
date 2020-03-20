@@ -4,12 +4,13 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using StardewModdingAPI;
 using StardewValley;
 using Object = StardewValley.Object;
 
 namespace MachineAugmentors.Items
 {
-    public enum MachineType
+    /*public enum MachineType
     {
         None,
         MayonnaiseMachine,
@@ -39,30 +40,47 @@ namespace MachineAugmentors.Items
         //  Not sure if this is a machine (might be a "Furniture" Object, which likely isn't a problem but whatever). If it is a regular Object, it probably works just like a Crystalarium. 
         //  Too lazy to test though. If you do add support for these, don't allow placing duplication augmentors on them - Would be way too overpowered
         //StatueOfEndlessFortune
-    }
+    }*/
 
     public class MachineInfo
     {
-        internal static Dictionary<MachineType, MachineInfo> IndexedMachineTypes = new Dictionary<MachineType, MachineInfo>()
+        private static AugmentorType[] AllAugmentorTypes = Enum.GetValues(typeof(AugmentorType)).Cast<AugmentorType>().ToArray();
+        private static ReadOnlyCollection<MachineInfo> BuiltInMachines = new List<MachineInfo>()
         {
-            { MachineType.MayonnaiseMachine, new MachineInfo(MachineType.MayonnaiseMachine, true, true, new List<int>() { 24 }) },
-            { MachineType.BeeHouse, new MachineInfo(MachineType.BeeHouse, false, false, new List<int>() { 10, 11 }) },
-            { MachineType.PreservesJar, new MachineInfo(MachineType.PreservesJar, false, true, new List<int>() { 15 }) },
-            { MachineType.CheesePress, new MachineInfo(MachineType.CheesePress, true, true, new List<int>() { 16 }) },
-            { MachineType.Loom, new MachineInfo(MachineType.Loom, false, true, new List<int>() { 17, 18 }) },
-            { MachineType.Keg, new MachineInfo(MachineType.Keg, false, true, new List<int>() { 12 }) },
-            { MachineType.OilMaker, new MachineInfo(MachineType.OilMaker, false, true, new List<int>() { 19 }) },
-            { MachineType.Cask, new MachineInfo(MachineType.Cask, true, true, new List<int>() { 163 }) },
-            { MachineType.CharcoalKiln, new MachineInfo(MachineType.CharcoalKiln, false, true, new List<int>() { 114, 115 }) },
-            { MachineType.Crystalarium, new MachineInfo(MachineType.Crystalarium, false, false, new List<int>() { 21 }) },
-            { MachineType.Furnace, new MachineInfo(MachineType.Furnace, false, true, new List<int>() { 13, 14 }) },
-            { MachineType.RecyclingMachine, new MachineInfo(MachineType.RecyclingMachine, false, true, new List<int>() { 20 }) },
-            { MachineType.SeedMaker, new MachineInfo(MachineType.SeedMaker, false, true, new List<int>() { 25 }) },
-            { MachineType.Tapper, new MachineInfo(MachineType.Tapper, false, false, new List<int>() { 105 }) },
-            { MachineType.WormBin, new MachineInfo(MachineType.WormBin, false, false, new List<int>() { 154 }) }
-        };
+            new MachineInfo("Mayonnaise Machine", 24, true, true, AllAugmentorTypes),
+            new MachineInfo("Bee House", new List<int>() { 10, 11 }, false, false, AugmentorType.Output, AugmentorType.Speed, AugmentorType.Duplication),
+            new MachineInfo("Preserves Jar", 15, false, true, AugmentorType.Output, AugmentorType.Speed, AugmentorType.Efficiency, AugmentorType.Production, AugmentorType.Duplication),
+            new MachineInfo("Cheese Press", 16, true, true, AllAugmentorTypes),
+            new MachineInfo("Loom", new List<int>() { 17, 18 }, false, true, AugmentorType.Output, AugmentorType.Speed, AugmentorType.Efficiency, AugmentorType.Production, AugmentorType.Duplication),
+            new MachineInfo("Keg", 12, false, true, AugmentorType.Output, AugmentorType.Speed, AugmentorType.Efficiency, AugmentorType.Production, AugmentorType.Duplication),
+            new MachineInfo("Oil Maker", 19, false, true, AugmentorType.Output, AugmentorType.Speed, AugmentorType.Efficiency, AugmentorType.Production, AugmentorType.Duplication),
+            new MachineInfo("Cask", 163, true, true, AllAugmentorTypes),
+            new MachineInfo("Charcoal Kiln", new List<int>() { 114, 115 }, false, true, AugmentorType.Output, AugmentorType.Speed, AugmentorType.Efficiency, AugmentorType.Production, AugmentorType.Duplication),
+            new MachineInfo("Crystalarium", 21, false, false, AugmentorType.Output, AugmentorType.Speed, AugmentorType.Duplication),
+            new MachineInfo("Furnace", new List<int>() { 13, 14 }, false, true, AugmentorType.Output, AugmentorType.Speed, AugmentorType.Efficiency, AugmentorType.Production, AugmentorType.Duplication),
+            new MachineInfo("Recycling Machine", 20, false, true, AugmentorType.Output, AugmentorType.Speed, AugmentorType.Efficiency, AugmentorType.Production, AugmentorType.Duplication),
+            new MachineInfo("Seed Maker", 25, false, true, AugmentorType.Output, AugmentorType.Speed, AugmentorType.Efficiency, AugmentorType.Production, AugmentorType.Duplication),
+            new MachineInfo("Tapper", 105, false, false, AugmentorType.Output, AugmentorType.Speed, AugmentorType.Duplication),
+            new MachineInfo("Worm Bin", 154, false, false, AugmentorType.Output, AugmentorType.Speed, AugmentorType.Duplication)
+        }.AsReadOnly();
 
-        public MachineType Type { get; }
+        static MachineInfo() { LoadAugmentableMachineData(); }
+        internal static void LoadAugmentableMachineData()
+        {
+            IModRegistry ModRegistry = MachineAugmentorsMod.ModInstance.Helper.ModRegistry;
+            IEnumerable<MachineInfo> CustomMachines = MachineAugmentorsMod.MachineConfig.Machines.Where(x => !string.IsNullOrEmpty(x.RequiredModUniqueId) && ModRegistry.IsLoaded(x.RequiredModUniqueId)).Select(x => x.ToMachineInfo());
+            RegisteredMachines = new ReadOnlyCollection<MachineInfo>(BuiltInMachines.Union(CustomMachines).ToList());
+        }
+        internal static ReadOnlyCollection<MachineInfo> RegisteredMachines { get; private set; }
+
+        public string Name { get; }
+
+        /// <summary>The values of <see cref="Item.ParentSheetIndex"/> that are valid for this machine. I think there should only be one Id, but I wasn't sure.<para/>
+        /// For example, furnaces have 2 sprites in TileSheets\Craftables.xnb, one at Index=13 (empty furnace) and one at Index=14 (full furnace).</summary>
+        public ReadOnlyCollection<int> Ids { get; }
+        public const int InvalidId = -1;
+
+        public ReadOnlyCollection<AugmentorType> AttachableAugmentors { get; }
 
         /// <summary>True if this machine produces output items that can have different <see cref="StardewValley.Object.Quality"/> values.<para/>
         /// For example, this would be true for Mayonnaise machines, but false for Furnaces</summary>
@@ -72,44 +90,36 @@ namespace MachineAugmentors.Items
         /// (since it only needs an initial input, and then will continue producing forever)<para/>True for things like Furnaces.</summary>
         public bool RequiresInput { get; }
 
-        /// <summary>The values of <see cref="Item.ParentSheetIndex"/> that are valid for this machine. I think there should only be one Id, but I wasn't sure.<para/>
-        /// For example, furnaces have 2 sprites in TileSheets\Craftables.xnb, one at Index=13 (empty furnace) and one at Index=14 (full furnace).</summary>
-        public ReadOnlyCollection<int> Ids { get; }
+        public MachineInfo(string Name, int Id, bool HasQualityProducts, bool RequiresInput, params AugmentorType[] AttachableAugmentors)
+            : this(Name, new List<int>() { Id }, HasQualityProducts, RequiresInput, AttachableAugmentors) { }
 
-        public MachineInfo(MachineType Type, bool HasQualityProducts, bool RequiresInput, IEnumerable<int> Ids)
+        public MachineInfo(string Name, IEnumerable<int> Ids, bool HasQualityProducts, bool RequiresInput, params AugmentorType[] AttachableAugmentors)
         {
-            this.Type = Type;
+            this.Name = Name;
+            this.Ids = Ids.Where(x => x != InvalidId).ToList().AsReadOnly();
             this.HasQualityProducts = HasQualityProducts;
             this.RequiresInput = RequiresInput;
-            this.Ids = Ids.ToList().AsReadOnly();
+
+            List<AugmentorType> ValidatedTypes = AttachableAugmentors.Distinct().ToList();
+            if (!HasQualityProducts)
+                ValidatedTypes.Remove(AugmentorType.Quality);
+            if (!RequiresInput)
+            {
+                ValidatedTypes.Remove(AugmentorType.Efficiency);
+                ValidatedTypes.Remove(AugmentorType.Production);
+            }
+            this.AttachableAugmentors = ValidatedTypes.AsReadOnly();
         }
 
         public bool IsMatch(Object Item)
         {
-            return Item != null && Item.bigCraftable.Value && Ids.Contains(Item.ParentSheetIndex);
+            return Item != null && Item.bigCraftable.Value && (Name == Item.Name || Ids.Contains(Item.ParentSheetIndex));
         }
 
-        public static MachineType GetMachineType(Object Item)
+        public static bool TryGetMachineInfo(Object Item, out MachineInfo Result)
         {
-            foreach (var KVP in IndexedMachineTypes)
-            {
-                if (KVP.Value.IsMatch(Item))
-                    return KVP.Key;
-            }
-
-            return MachineType.None;
+            Result = RegisteredMachines.FirstOrDefault(x => x.IsMatch(Item));
+            return Result != null;
         }
-
-        public static MachineInfo GetMachineInfo(MachineType Type)
-        {
-            if (Type == MachineType.None)
-                return null;
-            else if (IndexedMachineTypes.TryGetValue(Type, out MachineInfo Result))
-                return Result;
-            else
-                throw new NotImplementedException(string.Format("MachineInfo data not registered for Type='{0}'", Type.ToString()));
-        }
-
-        public static MachineInfo GetMachineInfo(Object Item) { return GetMachineInfo(GetMachineType(Item)); }
     }
 }
