@@ -346,15 +346,30 @@ namespace MachineAugmentors.Items
         {
             if (MachineInfo.TryGetMachineInfo(PODIData.Machine, out MachineInfo Info))
             {
-                if (!Info.AttachableAugmentors.Contains(AugmentorType.Quality) || AugmentorQuantity <= 0 || !Info.RequiresInput || !Info.HasQualityProducts)
+                if (!Info.AttachableAugmentors.Contains(AugmentorType.Quality) || AugmentorQuantity <= 0 || !Info.RequiresInput)
                     return;
 
-                int PreviousQuality = PODIData.CurrentHeldObject.Quality;
-                int NewQuality = ComputeNewValue(AugmentorQuantity, PreviousQuality, Info.RequiresInput, out double Effect, out double DesiredNewValue);
-                PODIData.CurrentHeldObject.Quality = NewQuality;
+                if (Info.IsFurnace() && Info.TryGetUpgradedQuality(PODIData.CurrentHeldObject, out Object UpgradedObject))
+                {
+                    double Effect = ComputeEffect(AugmentorQuantity, Info.RequiresInput);
+                    bool Success = WeightedRound(Effect) == 1;
+                    if (Success)
+                    {
+                        PODIData.Machine.heldObject.Value = UpgradedObject;
+                    }
 
-                MachineAugmentorsMod.LogTrace(AugmentorType.Quality, AugmentorQuantity, PODIData.Machine, Info.RequiresInput, PODIData.Machine.TileLocation,
-                    "HeldObject.Quality", PreviousQuality, DesiredNewValue, NewQuality, Effect);
+                    MachineAugmentorsMod.LogTrace(AugmentorType.Quality, AugmentorQuantity, PODIData.Machine, Info.RequiresInput, PODIData.Machine.TileLocation,
+                        "HeldObject.Quality", 0, Effect, Success ? 1 : 0, Effect);
+                }
+                else if (Info.HasQualityProducts)
+                {
+                    int PreviousQuality = PODIData.CurrentHeldObject.Quality;
+                    int NewQuality = ComputeNewValue(AugmentorQuantity, PreviousQuality, Info.RequiresInput, out double Effect, out double DesiredNewValue);
+                    PODIData.CurrentHeldObject.Quality = NewQuality;
+
+                    MachineAugmentorsMod.LogTrace(AugmentorType.Quality, AugmentorQuantity, PODIData.Machine, Info.RequiresInput, PODIData.Machine.TileLocation,
+                        "HeldObject.Quality", PreviousQuality, DesiredNewValue, NewQuality, Effect);
+                }
             }
         }
 

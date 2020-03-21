@@ -236,7 +236,11 @@ namespace MachineAugmentors.Harmony
                             BaseChance, (BaseChance * 100.0).ToString("0.##"), LocationMultiplier, ((LocationMultiplier - 1.0) * 100.0).ToString("0.##"), 
                             ExpMultiplier.ToString("#.####"), HPMultiplier, ((HPMultiplier - 1.0) * 100.0).ToString("0.##"), Chance, (Chance * 100.0).ToString("0.###"));
                     }
+#if DEBUG
                     MachineAugmentorsMod.ModInstance.Monitor.Log(LogMessage, LogLevel.Debug);
+#else
+                    MachineAugmentorsMod.ModInstance.Monitor.Log(LogMessage, LogLevel.Trace);
+#endif
                 }
             }
             catch (Exception ex)

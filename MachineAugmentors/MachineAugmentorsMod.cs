@@ -19,7 +19,7 @@ namespace MachineAugmentors
 {
     public class MachineAugmentorsMod : Mod
     {
-        public static Version CurrentVersion = new Version(1, 0, 2); // Last updated 3/19/2020 (Don't forget to update manifest.json)
+        public static Version CurrentVersion = new Version(1, 0, 3); // Last updated 3/21/2020 (Don't forget to update manifest.json)
         public const string ModUniqueId = "SlayerDharok.MachineAugmentors";
 
         private const string UserConfigFilename = "config.json";
@@ -38,8 +38,13 @@ namespace MachineAugmentors
 
         internal static void LogTrace(AugmentorType Type, int Quantity, Object Machine, bool RequiresInput, Vector2 Position, string PropertyName, double PreviousValue, double NewValueBeforeRounding, double NewValue, double Modifier)
         {
+#if DEBUG
+            LogLevel LogLevel = LogLevel.Debug;
+#else
+            LogLevel LogLevel = LogLevel.Trace;
+#endif
             ModInstance.Monitor.Log(string.Format("MachineAugmentors: {0} ({1}) - Modified {2}{3} at ({4},{5}) - Changed {6} from {7} to {8} ({9}% / Desired Value = {10})",
-                Type.ToString(), Quantity, Machine.DisplayName, RequiresInput ? "" : " (Inputless)", Position.X, Position.Y, PropertyName, PreviousValue, NewValue, (Modifier * 100.0).ToString("0.##"), NewValueBeforeRounding), LogLevel.Debug);
+                Type.ToString(), Quantity, Machine.DisplayName, RequiresInput ? "" : " (Inputless)", Position.X, Position.Y, PropertyName, PreviousValue, NewValue, (Modifier * 100.0).ToString("0.##"), NewValueBeforeRounding), LogLevel);
         }
 
         public override void Entry(IModHelper helper)
@@ -84,7 +89,7 @@ namespace MachineAugmentors
             Helper.Events.Display.MenuChanged += Display_MenuChanged;
             helper.Events.GameLoop.DayStarted += GameLoop_DayStarted;
 
-            #region Game Patches
+#region Game Patches
             HarmonyInstance Harmony = HarmonyInstance.Create(this.ModManifest.UniqueID);
 
             //  Patch Object.performObjectDropInAction, so that we can detect when items are put into a machine, and then modify the output based on attached augmentors
@@ -113,7 +118,7 @@ namespace MachineAugmentors
                 original: AccessTools.Method(typeof(GameLocation), nameof(GameLocation.monsterDrop)),
                 postfix: new HarmonyMethod(typeof(GamePatches), nameof(GamePatches.MonsterDrop_Postfix))
             );
-            #endregion Game Patches
+#endregion Game Patches
 
             RegisterConsoleCommands();
         }

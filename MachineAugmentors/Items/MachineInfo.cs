@@ -57,7 +57,7 @@ namespace MachineAugmentors.Items
             new MachineInfo("Cask", 163, true, true, AllAugmentorTypes),
             new MachineInfo("Charcoal Kiln", new List<int>() { 114, 115 }, false, true, AugmentorType.Output, AugmentorType.Speed, AugmentorType.Efficiency, AugmentorType.Production, AugmentorType.Duplication),
             new MachineInfo("Crystalarium", 21, false, false, AugmentorType.Output, AugmentorType.Speed, AugmentorType.Duplication),
-            new MachineInfo("Furnace", new List<int>() { 13, 14 }, false, true, AugmentorType.Output, AugmentorType.Speed, AugmentorType.Efficiency, AugmentorType.Production, AugmentorType.Duplication),
+            new MachineInfo("Furnace", new List<int>() { 13, 14 }, false, true, AugmentorType.Output, AugmentorType.Speed, AugmentorType.Efficiency, AugmentorType.Production, AugmentorType.Duplication, AugmentorType.Quality),
             new MachineInfo("Recycling Machine", 20, false, true, AugmentorType.Output, AugmentorType.Speed, AugmentorType.Efficiency, AugmentorType.Production, AugmentorType.Duplication),
             new MachineInfo("Seed Maker", 25, false, true, AugmentorType.Output, AugmentorType.Speed, AugmentorType.Efficiency, AugmentorType.Production, AugmentorType.Duplication),
             new MachineInfo("Tapper", 105, false, false, AugmentorType.Output, AugmentorType.Speed, AugmentorType.Duplication),
@@ -101,7 +101,7 @@ namespace MachineAugmentors.Items
             this.RequiresInput = RequiresInput;
 
             List<AugmentorType> ValidatedTypes = AttachableAugmentors.Distinct().ToList();
-            if (!HasQualityProducts)
+            if (!HasQualityProducts && !IsFurnace())
                 ValidatedTypes.Remove(AugmentorType.Quality);
             if (!RequiresInput)
             {
@@ -109,6 +109,30 @@ namespace MachineAugmentors.Items
                 ValidatedTypes.Remove(AugmentorType.Production);
             }
             this.AttachableAugmentors = ValidatedTypes.AsReadOnly();
+        }
+
+        public bool IsFurnace()
+        {
+            return Ids.Contains(13) || Ids.Contains(14);
+        }
+
+        public bool TryGetUpgradedQuality(Object Original, out Object Upgraded)
+        {
+            Upgraded = null;
+            if (Original == null)
+                return false;
+            else if (IsFurnace() && Original.Quality == 0 && !Original.bigCraftable.Value && !Original.IsRecipe)
+            {
+                if (Original.ParentSheetIndex == 334) // Copper Bar -> Iron Bar
+                    Upgraded = new Object(335, Original.Stack, false, -1, 0);
+                else if (Original.ParentSheetIndex == 335) // Iron Bar -> Gold Bar
+                    Upgraded = new Object(336, Original.Stack, false, -1, 0);
+                else if (Original.ParentSheetIndex == 336) // Gold Bar -> Iridium Bar
+                    Upgraded = new Object(337, Original.Stack, false, -1, 0);
+                return Upgraded != null;
+            }
+            else
+                return false;
         }
 
         public bool IsMatch(Object Item)
