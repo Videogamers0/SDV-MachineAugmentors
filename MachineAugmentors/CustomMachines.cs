@@ -26,7 +26,7 @@ namespace MachineAugmentors
         {
             this.Machines = new AugmentableMachine[]
             {
-                new AugmentableMachine("Hadi.JASoda", "Syrup Maker", 379, true, false)
+                //new AugmentableMachine("Hadi.JASoda", "Syrup Maker", 379, true, false) // Sample
             };
         }
 

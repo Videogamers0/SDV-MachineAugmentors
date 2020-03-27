@@ -86,7 +86,7 @@ namespace MachineAugmentors.Items
         /// For example, if one augmentor applied an offset to a value, and another augmentor applied a multiplier, the order that they apply their changes in will affect the outcome.<para/>
         /// (X+Offset)*Multiplier != (X*Multiplier)+Offset
         /// </summary>
-        private static IOrderedEnumerable<KeyValuePair<AugmentorType, int>> GetOrderedEnumerable(Dictionary<AugmentorType, int> PlacedQuantities)
+        internal static IOrderedEnumerable<KeyValuePair<AugmentorType, int>> GetOrderedEnumerable(Dictionary<AugmentorType, int> PlacedQuantities)
         {
             //  Processing order dependencies:
             //  1. SpeedAugmentors must be processed before DuplicationAugmentors, since the chance of duplication depends on MinutesUntilReady, which is modified by SpeedAugmentors.
@@ -373,13 +373,50 @@ namespace MachineAugmentors.Items
             this.Quantities = new Dictionary<AugmentorType, int>();
         }
 
+        private MachineState PreviousMachineState { get; set; } = null;
+
         internal void Update()
         {
             //  Check if the Machine has been removed from this tile
             if (!Location.Location.Objects.TryGetValue(new Vector2(Position.X, Position.Y), out Object CurrentMachine) || CurrentMachine != Machine)
             {
                 Location.OnMachineRemoved(this);
+                return;
             }
+
+            try
+            {
+                if (PreviousMachineState != null)
+                {
+                    if (PreviousMachineState.PreviousMinutesUntilReady <= 0 && PreviousMachineState.CurrentMinutesUntilReady > 0)
+                    {
+                        foreach (KeyValuePair<AugmentorType, int> KVP in PlacedAugmentorsManager.GetOrderedEnumerable(Quantities))
+                        {
+                            AugmentorType Type = KVP.Key;
+                            int AttachedQuantity = KVP.Value;
+
+                            if (AttachedQuantity > 0)
+                            {
+                                if (Type == AugmentorType.Output)
+                                    OutputAugmentor.OnMinutesUntilReadySet(PreviousMachineState, AttachedQuantity);
+                                else if (Type == AugmentorType.Speed)
+                                    SpeedAugmentor.OnMinutesUntilReadySet(PreviousMachineState, AttachedQuantity);
+                                else if (Type == AugmentorType.Efficiency)
+                                    EfficiencyAugmentor.OnMinutesUntilReadySet(PreviousMachineState, AttachedQuantity);
+                                else if (Type == AugmentorType.Quality)
+                                    QualityAugmentor.OnMinutesUntilReadySet(PreviousMachineState, AttachedQuantity);
+                                else if (Type == AugmentorType.Production)
+                                    ProductionAugmentor.OnMinutesUntilReadySet(PreviousMachineState, AttachedQuantity);
+                                else if (Type == AugmentorType.Duplication)
+                                    DuplicationAugmentor.OnMinutesUntilReadySet(PreviousMachineState, AttachedQuantity);
+                                else
+                                    throw new NotImplementedException(string.Format("Unrecognized AugmentorType: {0}", Type.ToString()));
+                            }
+                        }
+                    }
+                }
+            }
+            finally { PreviousMachineState = new MachineState(this.Machine); }
         }
 
         /// <param name="RemoveFromInventory">True if the given <paramref name="Qty"/> should be removed from the player's inventory.</param>
@@ -461,6 +498,31 @@ namespace MachineAugmentors.Items
                 Result.Add(Type, Qty);
             }
             return Result;
+        }
+    }
+
+    public class MachineState
+    {
+        public Object Machine { get; }
+
+        public Object PreviousHeldObject { get; }
+        public Object CurrentHeldObject { get { return Machine?.heldObject; } }
+        public int PreviousHeldObjectQuantity { get; }
+        public int CurrentHeldObjectQuantity { get { return CurrentHeldObject == null ? 0 : CurrentHeldObject.Stack; } }
+
+        public bool PreviousIsReadyForHarvest { get; }
+        public bool CurrentIsReadyForHarvest { get { return Machine.readyForHarvest; } }
+        public int PreviousMinutesUntilReady { get; }
+        public int CurrentMinutesUntilReady { get { return Machine.MinutesUntilReady; } }
+
+        public MachineState(Object Machine)
+        {
+            this.Machine = Machine;
+
+            this.PreviousHeldObject = Machine.heldObject;
+            this.PreviousHeldObjectQuantity = PreviousHeldObject == null ? 0 : PreviousHeldObject.Stack;
+            this.PreviousIsReadyForHarvest = Machine.readyForHarvest.Value;
+            this.PreviousMinutesUntilReady = Machine.MinutesUntilReady;
         }
     }
 }

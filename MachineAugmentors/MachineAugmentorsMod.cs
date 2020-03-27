@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Object = StardewValley.Object;
@@ -19,7 +20,7 @@ namespace MachineAugmentors
 {
     public class MachineAugmentorsMod : Mod
     {
-        public static Version CurrentVersion = new Version(1, 0, 3); // Last updated 3/21/2020 (Don't forget to update manifest.json)
+        public static Version CurrentVersion = new Version(1, 0, 4); // Last updated 3/27/2020 (Don't forget to update manifest.json)
         public const string ModUniqueId = "SlayerDharok.MachineAugmentors";
 
         private const string UserConfigFilename = "config.json";
@@ -84,7 +85,7 @@ namespace MachineAugmentors
             Helper.Events.Display.RenderedWorld += Display_RenderedWorld;
             Helper.Events.GameLoop.Saving += GameLoop_Saving;
             Helper.Events.GameLoop.SaveLoaded += GameLoop_SaveLoaded;
-            Helper.Events.GameLoop.OneSecondUpdateTicked += GameLoop_OneSecondUpdateTicked;
+            Helper.Events.GameLoop.UpdateTicked += GameLoop_UpdateTicked;
             Helper.Events.Input.CursorMoved += Input_CursorMoved;
             Helper.Events.Display.MenuChanged += Display_MenuChanged;
             helper.Events.GameLoop.DayStarted += GameLoop_DayStarted;
@@ -121,6 +122,12 @@ namespace MachineAugmentors
 #endregion Game Patches
 
             RegisterConsoleCommands();
+        }
+
+        private void GameLoop_UpdateTicked(object sender, StardewModdingAPI.Events.UpdateTickedEventArgs e)
+        {
+            if (Context.IsWorldReady)
+                PlacedAugmentorsManager.Instance?.Update();
         }
 
         private void GameLoop_DayStarted(object sender, StardewModdingAPI.Events.DayStartedEventArgs e)
@@ -206,7 +213,8 @@ namespace MachineAugmentors
 
         private static bool IsTravellingMerchantShop(ShopMenu Menu)
         {
-            return Menu != null && Menu.portraitPerson == null && Menu.storeContext != null && Menu.storeContext.Equals("Forest", StringComparison.CurrentCultureIgnoreCase);
+            return Menu != null && Menu.portraitPerson == null && Menu.storeContext != null && Menu.storeContext.Equals("Forest", StringComparison.CurrentCultureIgnoreCase)
+                    && Menu.onPurchase?.GetMethodInfo().Name == "onTravelingMerchantShopPurchase";
         }
 
         private void RegisterConsoleCommands()

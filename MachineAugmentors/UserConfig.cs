@@ -152,7 +152,7 @@ namespace MachineAugmentors
                 },
             };
 
-            this.DaysPerStandardDuplicate = 4.0;
+            this.DaysPerStandardDuplicate = 10.0;
             this.DaysPerInputlessDuplicate = 25.0;
 
             this.ShopSettings = new TravellingMerchantSettings();

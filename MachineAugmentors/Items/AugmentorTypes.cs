@@ -53,6 +53,7 @@ namespace MachineAugmentors.Items
 
         public static void OnProductsCollected(CheckForActionData CFAData, int AugmentorQuantity)
         {
+#if LEGACYCODE
             if (MachineInfo.TryGetMachineInfo(CFAData.Machine, out MachineInfo Info))
             {
                 if (!Info.AttachableAugmentors.Contains(AugmentorType.Output) || Info.RequiresInput || CFAData.CurrentHeldObject == null)
@@ -65,10 +66,12 @@ namespace MachineAugmentors.Items
                 MachineAugmentorsMod.LogTrace(AugmentorType.Output, AugmentorQuantity, CFAData.Machine, Info.RequiresInput, CFAData.Machine.TileLocation,
                     "HeldObject.Stack", PreviousStack, DesiredNewValue, NewStack, Effect);
             }
+#endif
         }
 
         public static void OnInputsInserted(PerformObjectDropInData PODIData, int AugmentorQuantity)
         {
+#if LEGACYCODE
             if (MachineInfo.TryGetMachineInfo(PODIData.Machine, out MachineInfo Info))
             {
                 if (!Info.AttachableAugmentors.Contains(AugmentorType.Output) || !Info.RequiresInput || PODIData.CurrentHeldObject == null)
@@ -79,6 +82,23 @@ namespace MachineAugmentors.Items
                 PODIData.CurrentHeldObject.Stack = NewStack;
 
                 MachineAugmentorsMod.LogTrace(AugmentorType.Output, AugmentorQuantity, PODIData.Machine, Info.RequiresInput, PODIData.Machine.TileLocation,
+                    "HeldObject.Stack", PreviousStack, DesiredNewValue, NewStack, Effect);
+            }
+#endif
+        }
+
+        public static void OnMinutesUntilReadySet(MachineState MS, int AugmentorQuantity)
+        {
+            if (MachineInfo.TryGetMachineInfo(MS.Machine, out MachineInfo Info))
+            {
+                if (!Info.AttachableAugmentors.Contains(AugmentorType.Output) || AugmentorQuantity <= 0 || MS.Machine.readyForHarvest.Value || MS.CurrentHeldObject == null)
+                    return;
+
+                int PreviousStack = MS.CurrentHeldObjectQuantity;
+                int NewStack = ComputeNewValue(AugmentorQuantity, PreviousStack, Info.RequiresInput, out double Effect, out double DesiredNewValue);
+                MS.CurrentHeldObject.Stack = NewStack;
+
+                MachineAugmentorsMod.LogTrace(AugmentorType.Output, AugmentorQuantity, MS.Machine, Info.RequiresInput, MS.Machine.TileLocation,
                     "HeldObject.Stack", PreviousStack, DesiredNewValue, NewStack, Effect);
             }
         }
@@ -120,6 +140,7 @@ namespace MachineAugmentors.Items
 
         public static void OnProductsCollected(CheckForActionData CFAData, int AugmentorQuantity)
         {
+#if LEGACYCODE
             if (MachineInfo.TryGetMachineInfo(CFAData.Machine, out MachineInfo Info))
             {
                 if (!Info.AttachableAugmentors.Contains(AugmentorType.Speed) || AugmentorQuantity <= 0 || Info.RequiresInput || CFAData.Machine.readyForHarvest.Value)
@@ -134,10 +155,12 @@ namespace MachineAugmentors.Items
                 MachineAugmentorsMod.LogTrace(AugmentorType.Speed, AugmentorQuantity, CFAData.Machine, Info.RequiresInput, CFAData.Machine.TileLocation,
                     "HeldObject.MinutesUntilReady", PreviousMinutes, DesiredNewValue, NewMinutes, Effect);
             }
+#endif
         }
 
         public static void OnInputsInserted(PerformObjectDropInData PODIData, int AugmentorQuantity)
         {
+#if LEGACYCODE
             if (MachineInfo.TryGetMachineInfo(PODIData.Machine, out MachineInfo Info))
             {
                 if (!Info.AttachableAugmentors.Contains(AugmentorType.Speed) || AugmentorQuantity <= 0 || !Info.RequiresInput || PODIData.Machine.readyForHarvest.Value)
@@ -175,6 +198,29 @@ namespace MachineAugmentors.Items
                 }
 
                 MachineAugmentorsMod.LogTrace(AugmentorType.Speed, AugmentorQuantity, PODIData.Machine, Info.RequiresInput, PODIData.Machine.TileLocation,
+                    "HeldObject.MinutesUntilReady", PreviousMinutes, DesiredNewValue, NewMinutes, Effect);
+            }
+#endif
+        }
+
+        public static void OnMinutesUntilReadySet(MachineState MS, int AugmentorQuantity)
+        {
+            if (MachineInfo.TryGetMachineInfo(MS.Machine, out MachineInfo Info))
+            {
+                if (!Info.AttachableAugmentors.Contains(AugmentorType.Speed) || AugmentorQuantity <= 0 || MS.Machine.readyForHarvest.Value || MS.CurrentHeldObject == null)
+                    return;
+
+                int PreviousMinutes = MS.CurrentMinutesUntilReady;
+                int NewMinutes = ComputeNewValue(AugmentorQuantity, PreviousMinutes, Info.RequiresInput, out double Effect, out double DesiredNewValue);
+
+                if (PreviousMinutes != NewMinutes)
+                {
+                    MS.Machine.MinutesUntilReady = NewMinutes;
+                    if (NewMinutes <= 0)
+                        MS.Machine.readyForHarvest.Value = true;
+                }
+
+                MachineAugmentorsMod.LogTrace(AugmentorType.Speed, AugmentorQuantity, MS.Machine, Info.RequiresInput, MS.Machine.TileLocation,
                     "HeldObject.MinutesUntilReady", PreviousMinutes, DesiredNewValue, NewMinutes, Effect);
             }
         }
@@ -223,17 +269,17 @@ namespace MachineAugmentors.Items
     {
         public EfficiencyAugmentor() : base(AugmentorType.Efficiency) { }
 
-        public static void OnProductsCollected(CheckForActionData CFAData, int AugmentorQuantity)
-        {
-            // Intentionally left blank since there are no inputs to refund during an OnProductsCollected.
-        }
-
         private static readonly ReadOnlyCollection<int> OreIds = new List<int>() {
             378, 380, 384, 386 // Coppre Ore, Iron Ore, Gold Ore, Iridium Ore
         }.AsReadOnly();
         public static bool IsOre(Item Item)
         {
             return Item != null && OreIds.Contains(Item.ParentSheetIndex) && Item is Object Obj && !Obj.GetType().IsSubclassOf(typeof(Object)) && !Obj.IsRecipe && !Obj.bigCraftable;
+        }
+
+        public static void OnProductsCollected(CheckForActionData CFAData, int AugmentorQuantity)
+        {
+            // Intentionally left blank since there are no inputs to refund during an OnProductsCollected.
         }
 
         public static void OnInputsInserted(PerformObjectDropInData PODIData, int AugmentorQuantity)
@@ -291,6 +337,11 @@ namespace MachineAugmentors.Items
             }
         }
 
+        public static void OnMinutesUntilReadySet(MachineState MS, int AugmentorQuantity)
+        {
+
+        }
+
         public static double ComputeEffect(int AugmentorQuantity, bool RequiresInput)
         {
             AugmentorConfig Config = MachineAugmentorsMod.UserConfig.GetConfig(AugmentorType.Efficiency);
@@ -328,6 +379,7 @@ namespace MachineAugmentors.Items
 
         public static void OnProductsCollected(CheckForActionData CFAData, int AugmentorQuantity)
         {
+#if LEGACYCODE
             if (MachineInfo.TryGetMachineInfo(CFAData.Machine, out MachineInfo Info))
             {
                 if (!Info.AttachableAugmentors.Contains(AugmentorType.Quality) || AugmentorQuantity <= 0 || Info.RequiresInput || !Info.HasQualityProducts)
@@ -340,10 +392,12 @@ namespace MachineAugmentors.Items
                 MachineAugmentorsMod.LogTrace(AugmentorType.Quality, AugmentorQuantity, CFAData.Machine, Info.RequiresInput, CFAData.Machine.TileLocation,
                     "HeldObject.Quality", PreviousQuality, DesiredNewValue, NewQuality, Effect);
             }
+#endif
         }
 
         public static void OnInputsInserted(PerformObjectDropInData PODIData, int AugmentorQuantity)
         {
+#if LEGACYCODE
             if (MachineInfo.TryGetMachineInfo(PODIData.Machine, out MachineInfo Info))
             {
                 if (!Info.AttachableAugmentors.Contains(AugmentorType.Quality) || AugmentorQuantity <= 0 || !Info.RequiresInput)
@@ -370,6 +424,41 @@ namespace MachineAugmentors.Items
                     MachineAugmentorsMod.LogTrace(AugmentorType.Quality, AugmentorQuantity, PODIData.Machine, Info.RequiresInput, PODIData.Machine.TileLocation,
                         "HeldObject.Quality", PreviousQuality, DesiredNewValue, NewQuality, Effect);
                 }
+            }
+#endif
+            if (MachineInfo.TryGetMachineInfo(PODIData.Machine, out MachineInfo Info))
+            {
+                if (!Info.AttachableAugmentors.Contains(AugmentorType.Quality) || AugmentorQuantity <= 0 || !Info.RequiresInput)
+                    return;
+
+                if (Info.IsFurnace() && Info.TryGetUpgradedQuality(PODIData.CurrentHeldObject, out Object UpgradedObject))
+                {
+                    double Effect = ComputeEffect(AugmentorQuantity, Info.RequiresInput);
+                    bool Success = WeightedRound(Effect) == 1;
+                    if (Success)
+                    {
+                        PODIData.Machine.heldObject.Value = UpgradedObject;
+                    }
+
+                    MachineAugmentorsMod.LogTrace(AugmentorType.Quality, AugmentorQuantity, PODIData.Machine, Info.RequiresInput, PODIData.Machine.TileLocation,
+                        "HeldObject.Quality", 0, Effect, Success ? 1 : 0, Effect);
+                }
+            }
+        }
+
+        public static void OnMinutesUntilReadySet(MachineState MS, int AugmentorQuantity)
+        {
+            if (MachineInfo.TryGetMachineInfo(MS.Machine, out MachineInfo Info))
+            {
+                if (!Info.AttachableAugmentors.Contains(AugmentorType.Quality) || AugmentorQuantity <= 0 || MS.Machine.readyForHarvest.Value || MS.CurrentHeldObject == null || !Info.HasQualityProducts)
+                    return;
+
+                int PreviousQuality = MS.CurrentHeldObject.Quality;
+                int NewQuality = ComputeNewValue(AugmentorQuantity, PreviousQuality, Info.RequiresInput, out double Effect, out double DesiredNewValue);
+                MS.CurrentHeldObject.Quality = NewQuality;
+
+                MachineAugmentorsMod.LogTrace(AugmentorType.Quality, AugmentorQuantity, MS.Machine, Info.RequiresInput, MS.Machine.TileLocation,
+                    "HeldObject.Quality", PreviousQuality, DesiredNewValue, NewQuality, Effect);
             }
         }
 
@@ -489,6 +578,11 @@ namespace MachineAugmentors.Items
             }
         }
 
+        public static void OnMinutesUntilReadySet(MachineState MS, int AugmentorQuantity)
+        {
+
+        }
+
         public static double ComputeEffect(int AugmentorQuantity, bool RequiresInput)
         {
             AugmentorConfig Config = MachineAugmentorsMod.UserConfig.GetConfig(AugmentorType.Production);
@@ -528,6 +622,7 @@ namespace MachineAugmentors.Items
 
         public static void OnProductsCollected(CheckForActionData CFAData, int AugmentorQuantity)
         {
+#if LEGACYCODE
             if (MachineInfo.TryGetMachineInfo(CFAData.Machine, out MachineInfo Info))
             {
                 if (!Info.AttachableAugmentors.Contains(AugmentorType.Duplication) || AugmentorQuantity <= 0 || Info.RequiresInput || CFAData.Machine.readyForHarvest)
@@ -547,10 +642,12 @@ namespace MachineAugmentors.Items
                 MachineAugmentorsMod.LogTrace(AugmentorType.Duplication, AugmentorQuantity, CFAData.Machine, Info.RequiresInput, CFAData.Machine.TileLocation,
                     "CreateDuplicate", 0, Chance, Convert.ToInt32(Success), Chance);
             }
+#endif
         }
 
         public static void OnInputsInserted(PerformObjectDropInData PODIData, int AugmentorQuantity)
         {
+#if LEGACYCODE
             if (MachineInfo.TryGetMachineInfo(PODIData.Machine, out MachineInfo Info))
             {
                 if (!Info.AttachableAugmentors.Contains(AugmentorType.Duplication) || AugmentorQuantity <= 0 || !Info.RequiresInput || PODIData.Machine.readyForHarvest)
@@ -568,6 +665,30 @@ namespace MachineAugmentors.Items
                 }
 
                 MachineAugmentorsMod.LogTrace(AugmentorType.Duplication, AugmentorQuantity, PODIData.Machine, Info.RequiresInput, PODIData.Machine.TileLocation,
+                    "CreateDuplicate", 0, Chance, Convert.ToInt32(Success), Chance);
+            }
+#endif
+        }
+
+        public static void OnMinutesUntilReadySet(MachineState MS, int AugmentorQuantity)
+        {
+            if (MachineInfo.TryGetMachineInfo(MS.Machine, out MachineInfo Info))
+            {
+                if (!Info.AttachableAugmentors.Contains(AugmentorType.Duplication) || AugmentorQuantity <= 0 || MS.Machine.readyForHarvest.Value || MS.CurrentHeldObject == null)
+                    return;
+
+                bool Success = SpawnDuplicate(AugmentorQuantity, MS.CurrentMinutesUntilReady, Info.RequiresInput, out double Chance);
+                if (Success)
+                {
+                    if (MS.Machine.getOne() is Object Duplicate)
+                    {
+                        Duplicate.Stack = 1;
+                        int SpawnDirection = Randomizer.Next(4);
+                        Game1.createItemDebris(Duplicate, Game1.player.getStandingPosition(), SpawnDirection, null, -1);
+                    }
+                }
+
+                MachineAugmentorsMod.LogTrace(AugmentorType.Duplication, AugmentorQuantity, MS.Machine, Info.RequiresInput, MS.Machine.TileLocation,
                     "CreateDuplicate", 0, Chance, Convert.ToInt32(Success), Chance);
             }
         }
