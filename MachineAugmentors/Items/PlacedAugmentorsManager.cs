@@ -31,52 +31,56 @@ namespace MachineAugmentors.Items
             {
                 if (!Context.IsMultiplayer || Context.IsMainPlayer)
                 { 
-                    //  Load data from save file
                     SerializablePlacedAugmentors SavedData = MachineAugmentorsMod.ModInstance.Helper.Data.ReadSaveData<SerializablePlacedAugmentors>(SavedDataKey);
-                    if (SavedData != null)
-                    {
-                        foreach (SerializableAugmentedLocation SavedLocation in SavedData.Locations)
-                        {
-                            string LocationName = SavedLocation.UniqueLocationName;
-                            GameLocation GL = Game1.getLocationFromName(LocationName);
-                            if (GL == null)
-                            {
-                                MachineAugmentorsMod.ModInstance.Monitor.Log(string.Format("Warning - Could not find a GameLocation named '{0}'. Some of your augmentors may not have been loaded from your save file!", LocationName), LogLevel.Warn);
-                            }
-                            else
-                            {
-                                AugmentedLocation AL = new AugmentedLocation(this, LocationName);
-                                Locations.Add(LocationName, AL);
-
-                                foreach (SerializableAugmentedTile SavedTile in SavedLocation.Tiles)
-                                {
-                                    if (!GL.Objects.TryGetValue(new Vector2(SavedTile.TileXPosition, SavedTile.TileYPosition), out Object Item))
-                                    {
-                                        string Warning = string.Format("Warning - GameLocation '{0}' does not have a machine at ({1},{2}). Some of your augmentors may not have been loaded from your save file!",
-                                            LocationName, SavedTile.TileXPosition, SavedTile.TileYPosition);
-                                        MachineAugmentorsMod.ModInstance.Monitor.Log(Warning, LogLevel.Warn);
-                                    }
-                                    else
-                                    {
-                                        AugmentedTile AT = new AugmentedTile(AL, SavedTile.TileXPosition, SavedTile.TileYPosition);
-                                        AL.Tiles.Add(AugmentedLocation.EncodeTileToString(SavedTile.TileXPosition, SavedTile.TileYPosition), AT);
-
-                                        for (int i = 0; i < SavedTile.AugmentorTypes.Length; i++)
-                                        {
-                                            AugmentorType Type = SavedTile.AugmentorTypes[i];
-                                            int Quantity = SavedTile.AugmentorQuantities[i];
-                                            AT.Quantities.Add(Type, Quantity);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    LoadSettings(SavedData);
                 }
             }
             catch (Exception ex)
             {
                 MachineAugmentorsMod.ModInstance.Monitor.Log("Error while loading augmentor data from ReadSaveData: " + ex, LogLevel.Error);
+            }
+        }
+
+        internal void LoadSettings(SerializablePlacedAugmentors Data)
+        {
+            if (Data != null)
+            {
+                foreach (SerializableAugmentedLocation SavedLocation in Data.Locations)
+                {
+                    string LocationName = SavedLocation.UniqueLocationName;
+                    GameLocation GL = Game1.getLocationFromName(LocationName);
+                    if (GL == null)
+                    {
+                        MachineAugmentorsMod.ModInstance.Monitor.Log(string.Format("Warning - Could not find a GameLocation named '{0}'. Some of your augmentors may not have been loaded from your save file!", LocationName), LogLevel.Warn);
+                    }
+                    else
+                    {
+                        AugmentedLocation AL = new AugmentedLocation(this, LocationName);
+                        Locations.Add(LocationName, AL);
+
+                        foreach (SerializableAugmentedTile SavedTile in SavedLocation.Tiles)
+                        {
+                            if (!GL.Objects.TryGetValue(new Vector2(SavedTile.TileXPosition, SavedTile.TileYPosition), out Object Item))
+                            {
+                                string Warning = string.Format("Warning - GameLocation '{0}' does not have a machine at ({1},{2}). Some of your augmentors may not have been loaded from your save file!",
+                                    LocationName, SavedTile.TileXPosition, SavedTile.TileYPosition);
+                                MachineAugmentorsMod.ModInstance.Monitor.Log(Warning, LogLevel.Warn);
+                            }
+                            else
+                            {
+                                AugmentedTile AT = new AugmentedTile(AL, SavedTile.TileXPosition, SavedTile.TileYPosition);
+                                AL.Tiles.Add(AugmentedLocation.EncodeTileToString(SavedTile.TileXPosition, SavedTile.TileYPosition), AT);
+
+                                for (int i = 0; i < SavedTile.AugmentorTypes.Length; i++)
+                                {
+                                    AugmentorType Type = SavedTile.AugmentorTypes[i];
+                                    int Quantity = SavedTile.AugmentorQuantities[i];
+                                    AT.Quantities.Add(Type, Quantity);
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -386,31 +390,34 @@ namespace MachineAugmentors.Items
 
             try
             {
-                if (PreviousMachineState != null)
+                if (!Context.IsMultiplayer || Context.IsMainPlayer)
                 {
-                    if (PreviousMachineState.PreviousMinutesUntilReady <= 0 && PreviousMachineState.CurrentMinutesUntilReady > 0)
+                    if (PreviousMachineState != null)
                     {
-                        foreach (KeyValuePair<AugmentorType, int> KVP in PlacedAugmentorsManager.GetOrderedEnumerable(Quantities))
+                        if (PreviousMachineState.PreviousMinutesUntilReady <= 0 && PreviousMachineState.CurrentMinutesUntilReady > 0)
                         {
-                            AugmentorType Type = KVP.Key;
-                            int AttachedQuantity = KVP.Value;
-
-                            if (AttachedQuantity > 0)
+                            foreach (KeyValuePair<AugmentorType, int> KVP in PlacedAugmentorsManager.GetOrderedEnumerable(Quantities))
                             {
-                                if (Type == AugmentorType.Output)
-                                    OutputAugmentor.OnMinutesUntilReadySet(PreviousMachineState, AttachedQuantity);
-                                else if (Type == AugmentorType.Speed)
-                                    SpeedAugmentor.OnMinutesUntilReadySet(PreviousMachineState, AttachedQuantity);
-                                else if (Type == AugmentorType.Efficiency)
-                                    EfficiencyAugmentor.OnMinutesUntilReadySet(PreviousMachineState, AttachedQuantity);
-                                else if (Type == AugmentorType.Quality)
-                                    QualityAugmentor.OnMinutesUntilReadySet(PreviousMachineState, AttachedQuantity);
-                                else if (Type == AugmentorType.Production)
-                                    ProductionAugmentor.OnMinutesUntilReadySet(PreviousMachineState, AttachedQuantity);
-                                else if (Type == AugmentorType.Duplication)
-                                    DuplicationAugmentor.OnMinutesUntilReadySet(PreviousMachineState, AttachedQuantity);
-                                else
-                                    throw new NotImplementedException(string.Format("Unrecognized AugmentorType: {0}", Type.ToString()));
+                                AugmentorType Type = KVP.Key;
+                                int AttachedQuantity = KVP.Value;
+
+                                if (AttachedQuantity > 0)
+                                {
+                                    if (Type == AugmentorType.Output)
+                                        OutputAugmentor.OnMinutesUntilReadySet(PreviousMachineState, AttachedQuantity);
+                                    else if (Type == AugmentorType.Speed)
+                                        SpeedAugmentor.OnMinutesUntilReadySet(PreviousMachineState, AttachedQuantity);
+                                    else if (Type == AugmentorType.Efficiency)
+                                        EfficiencyAugmentor.OnMinutesUntilReadySet(PreviousMachineState, AttachedQuantity);
+                                    else if (Type == AugmentorType.Quality)
+                                        QualityAugmentor.OnMinutesUntilReadySet(PreviousMachineState, AttachedQuantity);
+                                    else if (Type == AugmentorType.Production)
+                                        ProductionAugmentor.OnMinutesUntilReadySet(PreviousMachineState, AttachedQuantity);
+                                    else if (Type == AugmentorType.Duplication)
+                                        DuplicationAugmentor.OnMinutesUntilReadySet(PreviousMachineState, AttachedQuantity);
+                                    else
+                                        throw new NotImplementedException(string.Format("Unrecognized AugmentorType: {0}", Type.ToString()));
+                                }
                             }
                         }
                     }

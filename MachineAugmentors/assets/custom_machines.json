@@ -19,5 +19,15 @@
       ]
     }
     */
+    // Here's another example that lets you attach Speed Augmentors to Incubators. Not thoroughly tested but seems to work...
+    /*{
+      "RequiredModUniqueId": "SlayerDharok.MachineAugmentors",
+      "Name": "Incubator",
+      "HasQualityProducts": false,
+      "RequiresInput": true,
+      "AttachableAugmentors": [
+        "Speed"
+      ]
+    }*/
   ]
 }

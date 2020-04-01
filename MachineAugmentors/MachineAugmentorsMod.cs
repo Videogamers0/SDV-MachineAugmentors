@@ -37,6 +37,13 @@ namespace MachineAugmentors
                 return ModInstance.Helper.Translation.Get(Key);
         }
 
+        //TODO Multiplayer support -
+        //1. When a farmhand connects to host, host client has to send them a json string of the augmentor data.
+        //(new SerializablePlacedAugmentors(PlacedAugmentorsManager.Instance) ) ----- convert to a Json string
+        //when the farmhand receives it, deserialize back to a SerializablePlacedAugmentors, then call PlacedAugmentorsManager.Instance.LoadSettings(...)
+        //2. When a client (host or farmhand) places an augmentor, need to send info about what they placed, quantity, gamelocation, tile location to all other clients
+        //so the other clients can update their PlacedAugmentorsManager.Instance data.
+
         internal static void LogTrace(AugmentorType Type, int Quantity, Object Machine, bool RequiresInput, Vector2 Position, string PropertyName, double PreviousValue, double NewValueBeforeRounding, double NewValue, double Modifier)
         {
 #if DEBUG
