@@ -101,6 +101,8 @@ namespace MachineAugmentors
             MachineConfig = GlobalMachineConfig;
             MachineInfo.LoadAugmentableMachineData();
 
+            MachineInfo.IsPrismaticToolsModInstalled = helper.ModRegistry.IsLoaded("stokastic.PrismaticTools");
+
             Helper.Events.Display.RenderedWorld += Display_RenderedWorld;
             Helper.Events.GameLoop.Saving += GameLoop_Saving;
             Helper.Events.GameLoop.SaveLoaded += GameLoop_SaveLoaded;

@@ -15,6 +15,10 @@
     {
       "UniqueID": "Pathoschild.Automate",
       "IsRequired": false
+    },
+    {
+      "UniqueID": "stokastic.PrismaticTools",
+      "IsRequired": false
     }
   ]
 }

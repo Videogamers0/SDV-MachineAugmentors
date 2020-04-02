@@ -116,6 +116,9 @@ namespace MachineAugmentors.Items
             return Ids.Contains(13) || Ids.Contains(14);
         }
 
+        internal static bool IsPrismaticToolsModInstalled { get; set; } = false;
+        private const int PrismaticBarId = 1112;
+
         public bool TryGetUpgradedQuality(Object Original, out Object Upgraded)
         {
             Upgraded = null;
@@ -129,6 +132,8 @@ namespace MachineAugmentors.Items
                     Upgraded = new Object(336, Original.Stack, false, -1, 0);
                 else if (Original.ParentSheetIndex == 336) // Gold Bar -> Iridium Bar
                     Upgraded = new Object(337, Original.Stack, false, -1, 0);
+                else if (IsPrismaticToolsModInstalled && Original.ParentSheetIndex == 337) // Iridium Bar -> Prismatic Bar (from "Prismatic Tools" mod)
+                    Upgraded = new Object(PrismaticBarId, Original.Stack, false, -1, 0);
                 return Upgraded != null;
             }
             else
