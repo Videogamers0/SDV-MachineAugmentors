@@ -108,8 +108,15 @@ namespace MachineAugmentors.Items
             AugmentorConfig Config = MachineAugmentorsMod.UserConfig.GetConfig(AugmentorType.Output);
             int ActualQuantity = Math.Max(0, Math.Min(AugmentorQuantity, Config.MaxAttachmentsPerMachine));
             double UpperLimit = RequiresInput ? Config.MaxEffectPerStandardMachine : Config.MaxEffectPerInputlessMachine;
-            double RateOfDecay = RequiresInput ? Config.StandardDecayRate : Config.InputlessDecayRate;
-            return 1.0 + (UpperLimit * (1.0 - Math.Exp(ActualQuantity * -1 * RateOfDecay)));
+            if (Config.UseLinearFormula)
+            {
+                return 1.0 + (ActualQuantity * 1.0 / Config.MaxAttachmentsPerMachine * UpperLimit);
+            }
+            else
+            {
+                double RateOfDecay = RequiresInput ? Config.StandardDecayRate : Config.InputlessDecayRate;
+                return 1.0 + (UpperLimit * (1.0 - Math.Exp(ActualQuantity * -1 * RateOfDecay)));
+            }
         }
 
         public static int ComputeNewValue(int AugmentorQuantity, int PreviousValue, bool RequiresInput, out double Effect, out double ValueBeforeRandomization)
@@ -230,8 +237,15 @@ namespace MachineAugmentors.Items
             AugmentorConfig Config = MachineAugmentorsMod.UserConfig.GetConfig(AugmentorType.Speed);
             int ActualQuantity = Math.Max(0, Math.Min(AugmentorQuantity, Config.MaxAttachmentsPerMachine));
             double UpperLimit = RequiresInput ? Config.MaxEffectPerStandardMachine : Config.MaxEffectPerInputlessMachine;
-            double RateOfDecay = RequiresInput ? Config.StandardDecayRate : Config.InputlessDecayRate;
-            return 1.0 - (UpperLimit * (1.0 - Math.Exp(ActualQuantity * -1 * RateOfDecay)));
+            if (Config.UseLinearFormula)
+            {
+                return 1.0 - (ActualQuantity * 1.0 / Config.MaxAttachmentsPerMachine * UpperLimit);
+            }
+            else
+            {
+                double RateOfDecay = RequiresInput ? Config.StandardDecayRate : Config.InputlessDecayRate;
+                return 1.0 - (UpperLimit * (1.0 - Math.Exp(ActualQuantity * -1 * RateOfDecay)));
+            }
         }
 
         public static int ComputeNewValue(int AugmentorQuantity, int PreviousValue, bool RequiresInput, out double Effect, out double ValueBeforeRandomization)
@@ -347,8 +361,15 @@ namespace MachineAugmentors.Items
             AugmentorConfig Config = MachineAugmentorsMod.UserConfig.GetConfig(AugmentorType.Efficiency);
             int ActualQuantity = Math.Max(0, Math.Min(AugmentorQuantity, Config.MaxAttachmentsPerMachine));
             double UpperLimit = RequiresInput ? Config.MaxEffectPerStandardMachine : Config.MaxEffectPerInputlessMachine;
-            double RateOfDecay = RequiresInput ? Config.StandardDecayRate : Config.InputlessDecayRate;
-            return 1.0 - (UpperLimit * (1.0 - Math.Exp(ActualQuantity * -1 * RateOfDecay)));
+            if (Config.UseLinearFormula)
+            {
+                return 1.0 - (ActualQuantity * 1.0 / Config.MaxAttachmentsPerMachine * UpperLimit);
+            }
+            else
+            {
+                double RateOfDecay = RequiresInput ? Config.StandardDecayRate : Config.InputlessDecayRate;
+                return 1.0 - (UpperLimit * (1.0 - Math.Exp(ActualQuantity * -1 * RateOfDecay)));
+            }
         }
 
         public static int ComputeNewValue(int AugmentorQuantity, int PreviousValue, bool RequiresInput, out double Effect, out double ValueBeforeRandomization)
@@ -467,8 +488,15 @@ namespace MachineAugmentors.Items
             AugmentorConfig Config = MachineAugmentorsMod.UserConfig.GetConfig(AugmentorType.Quality);
             int ActualQuantity = Math.Max(0, Math.Min(AugmentorQuantity, Config.MaxAttachmentsPerMachine));
             double UpperLimit = RequiresInput ? Config.MaxEffectPerStandardMachine : Config.MaxEffectPerInputlessMachine;
-            double RateOfDecay = RequiresInput ? Config.StandardDecayRate : Config.InputlessDecayRate;
-            return Math.Min(0.999999, UpperLimit * (1.0 - Math.Exp(ActualQuantity * -1 * RateOfDecay)));
+            if (Config.UseLinearFormula)
+            {
+                return Math.Min(0.999999, ActualQuantity * 1.0 / Config.MaxAttachmentsPerMachine * UpperLimit);
+            }
+            else
+            {
+                double RateOfDecay = RequiresInput ? Config.StandardDecayRate : Config.InputlessDecayRate;
+                return Math.Min(0.999999, UpperLimit * (1.0 - Math.Exp(ActualQuantity * -1 * RateOfDecay)));
+            }
         }
 
         private const int QualityRegular = 0, QualitySilver = 1, QualityGold = 2, QualityIridium = 4;
@@ -588,8 +616,15 @@ namespace MachineAugmentors.Items
             AugmentorConfig Config = MachineAugmentorsMod.UserConfig.GetConfig(AugmentorType.Production);
             int ActualQuantity = Math.Max(0, Math.Min(AugmentorQuantity, Config.MaxAttachmentsPerMachine));
             double UpperLimit = RequiresInput ? Config.MaxEffectPerStandardMachine : Config.MaxEffectPerInputlessMachine;
-            double RateOfDecay = RequiresInput ? Config.StandardDecayRate : Config.InputlessDecayRate;
-            return 1.0 + (UpperLimit * (1.0 - Math.Exp(ActualQuantity * -1 * RateOfDecay)));
+            if (Config.UseLinearFormula)
+            {
+                return 1.0 + (ActualQuantity * 1.0 / Config.MaxAttachmentsPerMachine * UpperLimit);
+            }
+            else
+            {
+                double RateOfDecay = RequiresInput ? Config.StandardDecayRate : Config.InputlessDecayRate;
+                return 1.0 + (UpperLimit * (1.0 - Math.Exp(ActualQuantity * -1 * RateOfDecay)));
+            }
         }
 
         public static int ComputeNewValue(int AugmentorQuantity, double MaxEffect, int PreviousValue, bool RequiresInput, out double Effect, out double ValueBeforeRandomization)
@@ -704,7 +739,16 @@ namespace MachineAugmentors.Items
             int ActualQuantity = Math.Max(0, Math.Min(AugmentorQuantity, Config.MaxAttachmentsPerMachine));
             double UpperLimit = RequiresInput ? Config.MaxEffectPerStandardMachine : Config.MaxEffectPerInputlessMachine;
             double RateOfDecay = RequiresInput ? Config.StandardDecayRate : Config.InputlessDecayRate;
-            double Multiplier = UpperLimit * (1.0 - Math.Exp((ActualQuantity - 1) * -1 * RateOfDecay));
+
+            double Multiplier;
+            if (Config.UseLinearFormula)
+            {
+                Multiplier = ((ActualQuantity - 1) * 1.0 / Config.MaxAttachmentsPerMachine * UpperLimit);
+            }
+            else
+            {
+                Multiplier = UpperLimit * (1.0 - Math.Exp((ActualQuantity - 1) * -1 * RateOfDecay));
+            }
 
             double DuplicateChance = Math.Min(1.0, ProcessingDays / (BaseDaysPerDuplicate * (1.0 - Multiplier)));
             return DuplicateChance;

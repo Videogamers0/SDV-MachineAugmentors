@@ -85,6 +85,7 @@ namespace MachineAugmentors
                     ShopAppearanceWeight = 10,
                     ShopStockMultiplier = 1.75,
                     MaxAttachmentsPerMachine = 100,
+                    UseLinearFormula = false,
                     MaxEffectPerStandardMachine = 1.5, // Recommended: 1.0-2.0,
                     MaxEffectPerInputlessMachine = 0.75, // Recommended: 0.5-1.0
                     StandardDecayRate = 0.04, // Recommended: 0.02-0.05,
@@ -97,6 +98,7 @@ namespace MachineAugmentors
                     ShopAppearanceWeight = 12,
                     ShopStockMultiplier = 2.0,
                     MaxAttachmentsPerMachine = 100,
+                    UseLinearFormula = false,
                     MaxEffectPerStandardMachine = 0.98, // Recommended: 0.90-0.995
                     MaxEffectPerInputlessMachine = 0.9, // Recommended: 0.7-0.95
                     StandardDecayRate = 0.055, // Recommended: 0.03-0.07
@@ -109,6 +111,7 @@ namespace MachineAugmentors
                     ShopAppearanceWeight = 8,
                     ShopStockMultiplier = 1.4,
                     MaxAttachmentsPerMachine = 100,
+                    UseLinearFormula = false,
                     MaxEffectPerStandardMachine = 0.9, // Recommended: 0.75-0.95
                     MaxEffectPerInputlessMachine = 0.9, // Recommended: 0.75-0.95
                     StandardDecayRate = 0.045, // Recommended: 0.03-0.06
@@ -121,6 +124,7 @@ namespace MachineAugmentors
                     ShopAppearanceWeight = 8,
                     ShopStockMultiplier = 1.4,
                     MaxAttachmentsPerMachine = 100,
+                    UseLinearFormula = false,
                     MaxEffectPerStandardMachine = 0.98, // Recommended: 0.90-0.995
                     MaxEffectPerInputlessMachine = 0.95, // Recommended: 0.75-0.99
                     StandardDecayRate = 0.045, // Recommended: 0.03-0.06
@@ -133,6 +137,7 @@ namespace MachineAugmentors
                     ShopAppearanceWeight = 10,
                     ShopStockMultiplier = 1.60,
                     MaxAttachmentsPerMachine = 100,
+                    UseLinearFormula = false,
                     MaxEffectPerStandardMachine = 7.5, // Recommended: 5.0-10.0
                     MaxEffectPerInputlessMachine = 1.0, // Recommended: 0.5-1.5
                     StandardDecayRate = 0.04, // Recommended: 0.03-0.06
@@ -145,6 +150,7 @@ namespace MachineAugmentors
                     ShopAppearanceWeight = 5,
                     ShopStockMultiplier = 1.2,
                     MaxAttachmentsPerMachine = 25,
+                    UseLinearFormula = false,
                     MaxEffectPerStandardMachine = 0.95, // Recommended: 0.90-0.99
                     MaxEffectPerInputlessMachine = 0.95, // Recommended: 0.9-0.99
                     StandardDecayRate = 0.2, // Recommended: 0.1-0.25
@@ -212,6 +218,10 @@ namespace MachineAugmentors
         [XmlElement("MaxEffectPerInputlessMachine")]
         public double MaxEffectPerInputlessMachine { get; set; }
 
+        /// <summary>If true, overrides the effect calculations to simply be NumAttached / MaxAttachmentsPerMachine * MaxEffect, instead of using an exponential decay formula.</summary>
+        [XmlElement("UseLinearFormula")]
+        public bool UseLinearFormula { get; set; } = false;
+
         /// <summary>
         /// The rate of decay used in the formula that determines the effects of this AugmentorType.<para/>
         /// Most augmentors use this formula: Effect = C * (1 - e ^ (-X * K))<para/>
@@ -236,6 +246,7 @@ namespace MachineAugmentors
             ShopAppearanceWeight = 1;
             ShopStockMultiplier = 2.0;
             MaxAttachmentsPerMachine = 100;
+            UseLinearFormula = false;
             MaxEffectPerStandardMachine = 2.5;
             MaxEffectPerInputlessMachine = 2.0;
             StandardDecayRate = 0.075;

@@ -20,7 +20,13 @@ namespace MachineAugmentors.Helpers
         public static float MeasureNumber(int Number, float Scale)
         {
             int NumDigits = GetNumDigits(Number);
-            return TinyDigitBaseWidth * NumDigits * Scale;
+            return MeasureDigits(NumDigits, Scale);
+        }
+
+        /// <summary>Returns the width of a number containing the specific amount of digits, drawn via <see cref="Utility.drawTinyDigits(int, SpriteBatch, Vector2, float, float, Color)"/></summary>
+        public static float MeasureDigits(int DigitCount, float Scale)
+        {
+            return TinyDigitBaseWidth * DigitCount * Scale;
         }
 
         public static int GetNumDigits(int Value)
@@ -53,7 +59,7 @@ namespace MachineAugmentors.Helpers
 
                 if (int.TryParse(Substring, out int Number))
                 {
-                    SubstringSizes.Add(Substring, new Vector2(MeasureNumber(Number, DigitScale), TinyDigitBaseHeight * DigitScale));
+                    SubstringSizes.Add(Substring, new Vector2(MeasureDigits(Substring.Length, DigitScale), TinyDigitBaseHeight * DigitScale));
                 }
                 else
                 {
@@ -71,6 +77,24 @@ namespace MachineAugmentors.Helpers
 
                 if (int.TryParse(Substring, out int Number))
                 {
+                    //  Draw leading zeroes
+                    if (Number != 0)
+                    {
+                        for (int i = 0; i < Substring.Length; i++)
+                        {
+                            if (Substring[i] == '0')
+                            {
+                                Utility.drawTinyDigits(0, SB, SubstringPosition, DigitScale, 1.0f, Color);
+                                SubstringPosition.X += MeasureDigits(1, DigitScale);
+                            }
+                            else
+                            {
+                                break;
+                            }
+                        }
+                    }
+
+                    //  Draw the rest of the number
                     Utility.drawTinyDigits(Number, SB, SubstringPosition, DigitScale, 1.0f, Color);
                 }
                 else
@@ -98,7 +122,7 @@ namespace MachineAugmentors.Helpers
             {
                 Vector2 SubstringSize;
                 if (int.TryParse(Substring, out int Number))
-                    SubstringSize = new Vector2(MeasureNumber(Number, DigitScale), TinyDigitBaseHeight * DigitScale);
+                    SubstringSize = new Vector2(MeasureDigits(Substring.Length, DigitScale), TinyDigitBaseHeight * DigitScale);
                 else
                     SubstringSize = Game1.tinyFont.MeasureString(Substring) * Scale;
 

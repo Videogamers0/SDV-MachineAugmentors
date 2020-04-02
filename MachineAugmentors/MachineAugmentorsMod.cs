@@ -20,7 +20,7 @@ namespace MachineAugmentors
 {
     public class MachineAugmentorsMod : Mod
     {
-        public static Version CurrentVersion = new Version(1, 0, 4); // Last updated 3/27/2020 (Don't forget to update manifest.json)
+        public static Version CurrentVersion = new Version(1, 0, 5); // Last updated 3/27/2020 (Don't forget to update manifest.json)
         public const string ModUniqueId = "SlayerDharok.MachineAugmentors";
 
         private const string UserConfigFilename = "config.json";
@@ -66,7 +66,19 @@ namespace MachineAugmentors
 #endif
             if (GlobalUserConfig != null)
             {
+                bool RewriteConfig = false;
 
+                //  Version 1.0.5 added additional settings to augmentor formulas
+                if (GlobalUserConfig.CreatedByVersion < new Version(1, 0, 5))
+                {
+                    RewriteConfig = true;
+                }
+
+                if (RewriteConfig)
+                {
+                    GlobalUserConfig.CreatedByVersion = CurrentVersion;
+                    helper.Data.WriteJsonFile(UserConfigFilename, GlobalUserConfig);
+                }
             }
             else
             {
