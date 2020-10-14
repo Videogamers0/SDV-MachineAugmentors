@@ -20,7 +20,7 @@ namespace MachineAugmentors
 {
     public class MachineAugmentorsMod : Mod
     {
-        public static Version CurrentVersion = new Version(1, 0, 6); // Last updated 4/22/2020 (Don't forget to update manifest.json)
+        public static Version CurrentVersion = new Version(1, 0, 7); // Last updated 4/22/2020 (Don't forget to update manifest.json)
         public const string ModUniqueId = "SlayerDharok.MachineAugmentors";
 
         private const string UserConfigFilename = "config.json";
@@ -62,7 +62,9 @@ namespace MachineAugmentors
             LoadUserConfig();
 
             //  Load custom machine settings
-            MachineConfig GlobalMachineConfig = helper.Data.ReadJsonFile<MachineConfig>(Path.Combine("assets", MachineConfigFilename));
+            MachineConfig GlobalMachineConfig = helper.Data.ReadJsonFile<MachineConfig>(MachineConfigFilename);
+            if (MachineConfig == null)
+                GlobalMachineConfig = helper.Data.ReadJsonFile<MachineConfig>(Path.Combine("assets", MachineConfigFilename));
 #if DEBUG
             //GlobalMachineConfig = null; // Force full refresh of config file for testing purposes
 #endif
