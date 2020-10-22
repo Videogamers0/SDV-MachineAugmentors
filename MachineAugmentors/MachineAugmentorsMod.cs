@@ -20,7 +20,7 @@ namespace MachineAugmentors
 {
     public class MachineAugmentorsMod : Mod
     {
-        public static Version CurrentVersion = new Version(1, 0, 7); // Last updated 4/22/2020 (Don't forget to update manifest.json)
+        public static Version CurrentVersion = new Version(1, 0, 8); // Last updated 10/22/2020 (Don't forget to update manifest.json)
         public const string ModUniqueId = "SlayerDharok.MachineAugmentors";
 
         private const string UserConfigFilename = "config.json";
@@ -63,8 +63,21 @@ namespace MachineAugmentors
 
             //  Load custom machine settings
             MachineConfig GlobalMachineConfig = helper.Data.ReadJsonFile<MachineConfig>(MachineConfigFilename);
-            if (MachineConfig == null)
-                GlobalMachineConfig = helper.Data.ReadJsonFile<MachineConfig>(Path.Combine("assets", MachineConfigFilename));
+            if (GlobalMachineConfig == null)
+            {
+                string DefaultConfigRelativePath = Path.Combine("assets", MachineConfigFilename);
+                GlobalMachineConfig = helper.Data.ReadJsonFile<MachineConfig>(DefaultConfigRelativePath);
+                if (GlobalMachineConfig != null)
+                {
+                    try
+                    {
+                        string DefaultConfigAbsolutePath = Path.Combine(helper.DirectoryPath, DefaultConfigRelativePath);
+                        string TargetPath = Path.Combine(helper.DirectoryPath, Path.GetFileName(DefaultConfigAbsolutePath));
+                        File.Copy(DefaultConfigAbsolutePath, TargetPath);
+                    }
+                    catch { }
+                }
+            }
 #if DEBUG
             //GlobalMachineConfig = null; // Force full refresh of config file for testing purposes
 #endif
@@ -241,7 +254,8 @@ namespace MachineAugmentors
 
         private static bool IsTravellingMerchantShop(ShopMenu Menu)
         {
-            return Menu != null && Menu.portraitPerson == null && Menu.storeContext != null && Menu.storeContext.Equals("Forest", StringComparison.CurrentCultureIgnoreCase)
+            //  Note: In Stardew Valley Expanded v1.11, ShopMenu.portraitPerson is no longer null for the Travelling Merchant
+            return Menu != null /*&& Menu.portraitPerson == null*/ && Menu.storeContext != null && Menu.storeContext.Equals("Forest", StringComparison.CurrentCultureIgnoreCase)
                     && Menu.onPurchase?.GetMethodInfo().Name == "onTravelingMerchantShopPurchase";
         }
 
