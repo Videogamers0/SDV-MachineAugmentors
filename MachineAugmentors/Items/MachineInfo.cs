@@ -150,5 +150,14 @@ namespace MachineAugmentors.Items
             Result = RegisteredMachines.FirstOrDefault(x => x.IsMatch(Item));
             return Result != null;
         }
+
+        private static readonly ReadOnlyCollection<int> IndestructibleMachineIds = new List<int>() {
+            101 // Incubator
+        }.AsReadOnly();
+
+        public static bool IsDestructible(Object Machine)
+        {
+            return Machine != null && Machine.bigCraftable && Machine.CanBeSetDown && Machine.isPlaceable() && !IndestructibleMachineIds.Contains(Machine.ParentSheetIndex);
+        }
     }
 }

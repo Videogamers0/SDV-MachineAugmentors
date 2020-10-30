@@ -7,8 +7,10 @@ using Microsoft.Xna.Framework.Graphics;
 using StardewModdingAPI;
 using StardewValley;
 using StardewValley.Menus;
+using StardewValley.Tools;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -20,7 +22,7 @@ namespace MachineAugmentors
 {
     public class MachineAugmentorsMod : Mod
     {
-        public static Version CurrentVersion = new Version(1, 0, 8); // Last updated 10/22/2020 (Don't forget to update manifest.json)
+        public static Version CurrentVersion = new Version(1, 0, 9); // Last updated 10/29/2020 (Don't forget to update manifest.json)
         public const string ModUniqueId = "SlayerDharok.MachineAugmentors";
 
         private const string UserConfigFilename = "config.json";
@@ -98,6 +100,7 @@ namespace MachineAugmentors
             Helper.Events.Input.CursorMoved += Input_CursorMoved;
             Helper.Events.Display.MenuChanged += Display_MenuChanged;
             helper.Events.GameLoop.DayStarted += GameLoop_DayStarted;
+            Helper.Events.Input.ButtonPressed += Input_ButtonPressed;
 
 #region Game Patches
             HarmonyInstance Harmony = HarmonyInstance.Create(this.ModManifest.UniqueID);
@@ -131,6 +134,32 @@ namespace MachineAugmentors
 #endregion Game Patches
 
             RegisterConsoleCommands();
+        }
+
+        private void Input_ButtonPressed(object sender, StardewModdingAPI.Events.ButtonPressedEventArgs e)
+        {
+            //  Detect when the player uses an Axe or Pickaxe while standing next to an augmented, indestructible machine (such as an Incubator).
+            //  This will remove the augmentors from the machine.
+            //  (Destructible machines are handled by AugmentedTile.Update, which checks for when a machine is un-placed)
+            if (Context.IsGameLaunched && Context.IsWorldReady && (!Context.IsMultiplayer || Context.IsMainPlayer) && e.Button.IsUseToolButton() && PlacedAugmentorsManager.Instance != null)
+            {
+                Farmer Player = Game1.MasterPlayer;
+                if (Player.CurrentTool != null && (Player.CurrentTool is Pickaxe || Player.CurrentTool is Axe))
+                {
+                    Vector2 ToolTile = Player.GetToolLocation() / Game1.tileSize;
+                    GameLocation Location = Player.currentLocation;
+                    if (PlacedAugmentorsManager.Instance.Locations.TryGetValue(Location.NameOrUniqueName, out AugmentedLocation AugLoc))
+                    {
+                        if (AugLoc.Tiles.TryGetValue(AugmentedLocation.EncodeTileToString(ToolTile), out AugmentedTile AugTile))
+                        {
+                            if (!MachineInfo.IsDestructible(AugTile.Machine))
+                            {
+                                AugLoc.OnMachineRemoved(AugTile);
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         internal static void LoadUserConfig()
