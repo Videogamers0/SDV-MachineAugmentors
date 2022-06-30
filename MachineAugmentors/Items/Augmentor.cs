@@ -2,17 +2,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using PyTK.CustomElementHandler;
-using StardewModdingAPI;
-using StardewValley;
-using StardewValley.Network;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
 using System.Runtime.Serialization;
-using System.Text;
-using System.Threading.Tasks;
 using System.Xml.Serialization;
 using Object = StardewValley.Object;
 using Size = xTile.Dimensions.Size;
@@ -32,7 +22,8 @@ namespace MachineAugmentors.Items
     [XmlInclude(typeof(QualityAugmentor))]
     [XmlInclude(typeof(ProductionAugmentor))]
     [XmlInclude(typeof(DuplicationAugmentor))]
-    public abstract class Augmentor : Object, ISaveElement
+
+    public abstract class Augmentor : Object
     {
         public UserConfig UserConfig { get { return MachineAugmentorsMod.UserConfig; } }
         public AugmentorConfig AugmentorConfig { get { return UserConfig.GetConfig(AugmentorType); } }
@@ -223,7 +214,7 @@ namespace MachineAugmentors.Items
 
         protected bool BaseIsAugmentable(Object Item)
         {
-            if (Item == null || !Item.bigCraftable || !Item.isPlaceable())
+            if (Item == null || !Item.bigCraftable.Value || !Item.isPlaceable())
             {
                 return false;
             }
