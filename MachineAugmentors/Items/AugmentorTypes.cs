@@ -1,15 +1,9 @@
-﻿using MachineAugmentors.Harmony;
-using MachineAugmentors.Helpers;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+﻿using Microsoft.Xna.Framework;
 using StardewValley;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Xml.Serialization;
 using static MachineAugmentors.Harmony.GamePatches;
 using Object = StardewValley.Object;
@@ -288,7 +282,7 @@ namespace MachineAugmentors.Items
         }.AsReadOnly();
         public static bool IsOre(Item Item)
         {
-            return Item != null && OreIds.Contains(Item.ParentSheetIndex) && Item is Object Obj && !Obj.GetType().IsSubclassOf(typeof(Object)) && !Obj.IsRecipe && !Obj.bigCraftable;
+            return Item != null && OreIds.Contains(Item.ParentSheetIndex) && Item is Object Obj && !Obj.GetType().IsSubclassOf(typeof(Object)) && !Obj.IsRecipe && !Obj.bigCraftable.Value;
         }
 
         public static void OnProductsCollected(CheckForActionData CFAData, int AugmentorQuantity)

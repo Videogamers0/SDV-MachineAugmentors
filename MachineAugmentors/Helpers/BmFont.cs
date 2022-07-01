@@ -1,10 +1,10 @@
 ﻿using System;
-using System.IO;
-using System.Xml.Serialization;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Xml.Serialization;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using System.Linq;
 
 namespace MachineAugmentors.Helpers
 {
@@ -106,7 +106,6 @@ namespace MachineAugmentors.Helpers
             return new Vector2(LineWidths.Max(), LineWidths.Count * _fontFile.Info.Size * scale);
         }
     }
-
 
     [Serializable]
     [XmlRoot("font")]
