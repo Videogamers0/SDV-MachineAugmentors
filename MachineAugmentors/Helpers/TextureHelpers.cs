@@ -1,5 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using StardewModdingAPI;
+using System.Collections.Generic;
 
 namespace MachineAugmentors.Helpers
 {
@@ -12,7 +14,7 @@ namespace MachineAugmentors.Helpers
             {
                 if (_EmojiSpritesheet == null || _EmojiSpritesheet.IsDisposed)
                 {
-                    _EmojiSpritesheet = MachineAugmentorsMod.ModInstance.Helper.GameContent.Load<Texture2D>("LooseSprites/emojis");
+                    _EmojiSpritesheet = MachineAugmentorsMod.ModInstance.Helper.Content.Load<Texture2D>("LooseSprites/emojis", ContentSource.GameContent);
                 }
                 return _EmojiSpritesheet;
             }
@@ -25,7 +27,7 @@ namespace MachineAugmentors.Helpers
             {
                 if (_PlayerStatusList == null || _PlayerStatusList.IsDisposed)
                 {
-                    _PlayerStatusList = MachineAugmentorsMod.ModInstance.Helper.GameContent.Load<Texture2D>("LooseSprites/PlayerStatusList");
+                    _PlayerStatusList = MachineAugmentorsMod.ModInstance.Helper.Content.Load<Texture2D>("LooseSprites/PlayerStatusList", ContentSource.GameContent);
                 }
                 return _PlayerStatusList;
             }

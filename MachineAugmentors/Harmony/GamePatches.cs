@@ -1,7 +1,12 @@
 ﻿using HarmonyLib;
 using MachineAugmentors.Items;
 using Microsoft.Xna.Framework.Graphics;
+using StardewModdingAPI;
+using StardewValley;
 using StardewValley.Monsters;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Object = StardewValley.Object;
 
 namespace MachineAugmentors.Harmony

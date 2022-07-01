@@ -1,6 +1,11 @@
 ﻿using Microsoft.Xna.Framework;
 using Object = StardewValley.Object;
 using static MachineAugmentors.Harmony.GamePatches;
+using StardewValley;
+using System.Collections.Generic;
+using System;
+using StardewModdingAPI;
+using System.Linq;
 
 namespace MachineAugmentors.Items
 {

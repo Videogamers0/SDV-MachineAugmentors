@@ -1,4 +1,7 @@
 ﻿
+using StardewValley;
+using System;
+
 namespace MachineAugmentors.Helpers
 {
     public interface ISpaceCoreAPI

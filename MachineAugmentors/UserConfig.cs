@@ -4,6 +4,10 @@ using System.Runtime.Serialization;
 using System.Xml.Serialization;
 using StardewValley.Monsters;
 using StardewValley.Locations;
+using System.Collections.Generic;
+using System;
+using StardewValley;
+using System.IO;
 
 namespace MachineAugmentors
 {

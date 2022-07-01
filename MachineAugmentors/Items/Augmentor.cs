@@ -2,6 +2,11 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using StardewModdingAPI;
+using StardewValley;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.Serialization;
 using System.Xml.Serialization;
 using Object = StardewValley.Object;
@@ -23,7 +28,6 @@ namespace MachineAugmentors.Items
     [XmlInclude(typeof(QualityAugmentor))]
     [XmlInclude(typeof(ProductionAugmentor))]
     [XmlInclude(typeof(DuplicationAugmentor))]
-
     public abstract class Augmentor : Object
     {
         public UserConfig UserConfig { get { return MachineAugmentorsMod.UserConfig; } }
@@ -59,24 +63,6 @@ namespace MachineAugmentors.Items
             : base(22763 + (int)Type, 1, false, -1, 0)
         {
             this.AugmentorType = Type;
-        }
-
-        public object getReplacement()
-        {
-            Object Replacement = new Object(92, 1, false, -1, 0);
-            return Replacement;
-        }
-
-        public Dictionary<string, string> getAdditionalSaveData()
-        {
-            Dictionary<string, string> Data = new Dictionary<string, string>();
-            Data.Add("Qty", Stack.ToString());
-            return Data;
-        }
-
-        public void rebuild(Dictionary<string, string> additionalSaveData, object replacement)
-        {
-            this.Stack = int.Parse(additionalSaveData["Qty"]);
         }
 
         //other possible icons: 

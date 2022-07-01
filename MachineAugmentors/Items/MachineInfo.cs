@@ -1,4 +1,8 @@
-﻿using System.Collections.ObjectModel;
+﻿using StardewModdingAPI;
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
 using Object = StardewValley.Object;
 
 namespace MachineAugmentors.Items

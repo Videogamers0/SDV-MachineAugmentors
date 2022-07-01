@@ -4,8 +4,15 @@ using MachineAugmentors.Helpers;
 using MachineAugmentors.Items;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using StardewModdingAPI;
+using StardewModdingAPI.Events;
+using StardewValley;
 using StardewValley.Menus;
 using StardewValley.Tools;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Reflection;
 using Object = StardewValley.Object;
 
@@ -84,6 +91,7 @@ namespace MachineAugmentors
 
             MachineInfo.IsPrismaticToolsModInstalled = helper.ModRegistry.IsLoaded("stokastic.PrismaticTools");
 
+            LegacyDataMigrator.OnModEntry(Helper);
             Helper.Events.GameLoop.GameLaunched += OnGameLaunched;
             Helper.Events.Display.RenderedWorld += Display_RenderedWorld;
             Helper.Events.GameLoop.Saving += GameLoop_Saving;
@@ -188,7 +196,6 @@ namespace MachineAugmentors
 
         private void OnGameLaunched(object sender, GameLaunchedEventArgs e)
         {
-
             // setup spacecore
             ISpaceCoreAPI spacecoreAPI = Helper.ModRegistry.GetApi<ISpaceCoreAPI>("spacechase0.SpaceCore");
             if (spacecoreAPI is null)
