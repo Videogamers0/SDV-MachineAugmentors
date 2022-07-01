@@ -84,6 +84,7 @@ namespace MachineAugmentors
 
             MachineInfo.IsPrismaticToolsModInstalled = helper.ModRegistry.IsLoaded("stokastic.PrismaticTools");
 
+            Helper.Events.GameLoop.GameLaunched += OnGameLaunched;
             Helper.Events.Display.RenderedWorld += Display_RenderedWorld;
             Helper.Events.GameLoop.Saving += GameLoop_Saving;
             Helper.Events.GameLoop.SaveLoaded += GameLoop_SaveLoaded;
@@ -183,6 +184,19 @@ namespace MachineAugmentors
             }
             GlobalUserConfig.AfterLoaded();
             UserConfig = GlobalUserConfig;
+        }
+
+        private void OnGameLaunched(object sender, GameLaunchedEventArgs e)
+        {
+
+            // setup spacecore
+            ISpaceCoreAPI spacecoreAPI = Helper.ModRegistry.GetApi<ISpaceCoreAPI>("spacechase0.SpaceCore");
+            if (spacecoreAPI is null)
+            {
+                // Skip patcher mod behaviours if we fail to load the objects
+                ModInstance.Monitor.Log($"Couldn't access mod-provided API for SpaceCore. " + ModUniqueId + " will not be available, and no changes will be made.", LogLevel.Error);
+            }
+            spacecoreAPI.RegisterSerializerType(typeof(Augmentor));
         }
 
         private void GameLoop_UpdateTicked(object sender, StardewModdingAPI.Events.UpdateTickedEventArgs e)

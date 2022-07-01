@@ -9,6 +9,7 @@ using Size = xTile.Dimensions.Size;
 
 namespace MachineAugmentors.Items
 {
+    [XmlType("Mods_MachineAugmentors_Augmentor")]
     [XmlRoot(ElementName = "Augmentor", Namespace = "")]
     [KnownType(typeof(OutputAugmentor))]
     [KnownType(typeof(SpeedAugmentor))]
